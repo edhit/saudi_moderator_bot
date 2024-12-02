@@ -58,7 +58,7 @@ async function handleMessage(ctx, text, source) {
     }
 
     // Если всё в порядке
-    await ctx.reply(`✅ Ваше сообщение из ${source} соответствует требованиям.`);
+    await ctx.reply(`✅ Ваше сообщение из ${source} соответствует требованиям.${similarity}`);
 }
 
 // Запуск бота
