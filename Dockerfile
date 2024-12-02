@@ -1,20 +1,20 @@
-# Используем официальный образ Node.js
+# Используем Node.js в качестве базового образа
 FROM node:18
 
 # Устанавливаем рабочую директорию
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Копируем package.json и package-lock.json (если есть)
+# Копируем файлы package.json и package-lock.json
 COPY package*.json ./
 
 # Устанавливаем зависимости
 RUN npm install
 
-# Копируем остальные файлы в контейнер
+# Копируем остальные файлы проекта
 COPY . .
 
-# Устанавливаем переменную окружения для токена Telegram
-ENV BOT_TOKEN=${BOT_TOKEN}
+# Указываем порт (опционально, только для документации)
+EXPOSE 3000
 
-# Запускаем бота
-CMD ["node", "bot.js"]
+# Команда запуска приложения
+CMD ["npm", "start"]
