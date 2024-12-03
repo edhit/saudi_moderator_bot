@@ -88,8 +88,8 @@ bot.on('callback_query', async (ctx) => {
     const [action, userId, groupId, messageId] = data.split(':');
 
     if (action === 'approve' || action === 'reject') {
-      const message = await ctx.telegram.getMessage(groupId, messageId);
-
+      // const message = await ctx.telegram.getMessage(groupId, messageId);
+      const message = ctx.callbackQuery.message.text.replace('Подходит это сообщение?\n\n', '');
       // Обновляем данные обучения
       trainingData.push({
         input: { text: message.text || '' },
