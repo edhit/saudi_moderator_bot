@@ -108,7 +108,7 @@ bot.on('callback_query', async (ctx) => {
       saveTrainingData();
       trainingCount++;
 
-      await ctx.answerCbQuery(`Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`);
+      await ctx.editMessageText(`Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`);
 
       if (trainingCount >= trainingGoal) {
         await ctx.telegram.sendMessage(process.env.ADMIN_ID, 'Обучение завершено. Нейросеть теперь может работать автономно.');
