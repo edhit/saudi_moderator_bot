@@ -107,3 +107,9 @@ bot.on('callback_query', async (ctx) => {
     winston.error('Error processing callback query:', error);
   }
 });
+
+
+// Запуск бота
+bot.launch().then(() => {
+  console.log('Бот запущен!');
+});
