@@ -49,7 +49,7 @@ const reviewMessage = async (ctx, message) => {
   const userId = message.from.id;
 
   // Отправляем сообщение на модерацию
-  const modMessage = await ctx.telegram.sendMessage(process.env.MODERATOR_CHAT_ID, `Подходит это сообщение?\n\n"${messageText}"`, {
+  const modMessage = await ctx.telegram.sendMessage(process.env.MODERATOR_CHAT_ID, `Подходит это сообщение?\n\n${messageText}`, {
     reply_markup: {
       inline_keyboard: [
         [
