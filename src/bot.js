@@ -14,15 +14,25 @@ let trainingData = [];
 // Загрузка данных обучения
 const loadTrainingData = () => {
   if (fs.existsSync('./src/trainingData.json')) {
-    const data = JSON.parse(fs.readFileSync('./src/trainingData.json'));
-    trainingData = data;
-    if (data.length > 0) net.train(data);
+    try {
+      const data = JSON.parse(fs.readFileSync('./src/trainingData.json', 'utf8'));
+      trainingData = Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Ошибка загрузки trainingData.json:', error);
+      trainingData = [];
+    }
+  } else {
+    trainingData = [];
   }
 };
 
 // Сохранение данных обучения
 const saveTrainingData = () => {
-  fs.writeFileSync('./src/trainingData.json', JSON.stringify(trainingData, null, 2));
+  try {
+    fs.writeFileSync('./src/trainingData.json', JSON.stringify(trainingData, null, 2));
+  } catch (error) {
+    console.error('Ошибка сохранения trainingData.json:', error);
+  }
 };
 
 // Загрузка данных при запуске
