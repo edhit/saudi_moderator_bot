@@ -1,20 +1,11 @@
-# Используем Node.js в качестве базового образа
-FROM node:18
+FROM node:16
 
-# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Копируем файлы package.json и package-lock.json
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
-# Устанавливаем зависимости
 RUN npm install
 
-# Копируем остальные файлы проекта
 COPY . .
 
-# Указываем порт (опционально, только для документации)
-EXPOSE 3000
-
-# Команда запуска приложения
-CMD ["npm", "start"]
+CMD ["node", "src/bot.js"]
