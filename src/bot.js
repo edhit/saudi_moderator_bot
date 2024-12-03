@@ -102,7 +102,7 @@ bot.on('callback_query', async (ctx) => {
       const message = ctx.callbackQuery.message.text.replace('Подходит это сообщение?\n\n', '');
       // Обновляем данные обучения
       trainingData.push({
-        input: { text: message.text || '' },
+        input: { text: message || '' },
         output: { appropriate: action === 'approve' ? 1 : 0 },
       });
       saveTrainingData();
