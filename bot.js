@@ -94,17 +94,18 @@ async function trainModel() {
 
 // Получение списка рецензентов
 async function getReviewers() {
-  try {
-    const response = await axios.get(REVIEWERS_API);
-    if (Array.isArray(response.data)) {
-      return response.data.map((reviewer) => parseInt(reviewer.id, 10));
-    }
-    logger.warn('API рецензентов вернуло некорректный формат.');
-    return [];
-  } catch (err) {
-    logger.error(`Ошибка получения списка рецензентов: ${err.message}`);
-    return [];
-  }
+  return [5781529295]
+  //try {
+    //const response = await axios.get(REVIEWERS_API);
+    //if (Array.isArray(response.data)) {
+      //return response.data.map((reviewer) => parseInt(reviewer.id, 10));
+    //}
+    //logger.warn('API рецензентов вернуло некорректный формат.');
+    //return [];
+  //} catch (err) {
+    //logger.error(`Ошибка получения списка рецензентов: ${err.message}`);
+    //return [];
+  //}
 }
 
 // Функция для проверки наличия ссылок и имени пользователя
