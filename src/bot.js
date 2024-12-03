@@ -53,6 +53,8 @@ const reviewMessage = async (ctx, message) => {
   winston.info(`Message sent for moderation: ${modMessage.message_id}`);
 };
 
+bot.start((ctx) => ctx.reply('Welcome'))
+
 // Обработка сообщений из группы
 bot.on('message', async (ctx) => {
   try {
