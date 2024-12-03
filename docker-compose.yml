@@ -6,4 +6,5 @@ services:
     restart: always
     env_file: .env
     volumes:
-      - ./logs:/app/logs
+      - ./src:/app/src    # Монтируем локальную директорию src
+      - ./logs:/app/logs  # Логи сохраняем локально
