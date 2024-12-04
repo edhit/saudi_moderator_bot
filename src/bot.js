@@ -46,10 +46,11 @@ const addOrUpdateTrainingData = (messageId, input, output) => {
     trainingData[existingRecordIndex] = { messageId, input, output };
   } else {
     trainingData.push({ messageId, input, output });
+    trainingCount++;
+
   }
 
   saveTrainingData();
-  trainingCount++;
 };
 
 // Загрузка данных при запуске
