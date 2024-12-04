@@ -1,4 +1,3 @@
-const { exec } = require('child_process');
 const { Telegraf } = require('telegraf');
 const brain = require('brain.js');
 const winston = require('./logger');
@@ -47,7 +46,6 @@ const addOrUpdateTrainingData = (messageId, input, output) => {
   } else {
     trainingData.push({ messageId, input, output });
     trainingCount++;
-
   }
 
   saveTrainingData();
@@ -59,6 +57,10 @@ loadTrainingData();
 // Переменные для подсчета
 let trainingCount = trainingData.length;
 const trainingGoal = 1000;
+
+if (trainingCount >= trainingGoal) {
+  net.train(trainingData); // Обучаем сеть
+}
 
 // Проверка и обучение
 const reviewMessage = async (ctx, message) => {
@@ -82,32 +84,6 @@ const reviewMessage = async (ctx, message) => {
 };
 
 bot.command('ujzbqecfubpjkqu', (ctx) => ctx.reply('🫡'))
-
-bot.command('rasxtdhndjvwtzp', async (ctx) => {
-  // if (ctx.from.id !== process.env.ADMIN_ID) {
-    //return ctx.reply('У вас нет прав для выполнения этой команды.');
-  // }
-
-  try {
-    ctx.reply('Запускаю обновление...');
-    exec('bash manage.sh update', (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Ошибка выполнения скрипта: ${error.message}`);
-        ctx.reply(`Ошибка: ${error.message}`);
-        return;
-      }
-      if (stderr) {
-        console.error(`Стандартная ошибка: ${stderr}`);
-        ctx.reply(`Ошибка: ${stderr}`);
-        return;
-      }
-      ctx.reply(`Скрипт выполнен успешно:\n${stdout}`);
-    });
-  } catch (error) {
-    console.error('Ошибка обработки команды /git:', error);
-    ctx.reply('Произошла ошибка при выполнении команды.');
-  }
-});
 
 // Обработка ответов на модерацию
 bot.on('callback_query', async (ctx) => {
