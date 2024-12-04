@@ -2,7 +2,6 @@ version: '3.8'
 services:
   bot:
     build: .
-    container_name: telegram_moderator_bot
     restart: always
     env_file: .env
     volumes:
