@@ -129,8 +129,8 @@ bot.on('callback_query', async (ctx) => {
         reply_markup: {
           inline_keyboard: [
             [
-              { text: action === 'approve' ? '✅ Да' : 'Да' , callback_data: `approve:${message.message_id}` },
-              { text: action === 'reject' ? '✅ Нет' : 'Нет', callback_data: `reject:${message.message_id}` },
+              { text: action === 'approve' ? '✅ Да' : 'Да' , callback_data: `approve:${messageId}` },
+              { text: action === 'reject' ? '✅ Нет' : 'Нет', callback_data: `reject:${messageId}` },
             ],
           ],
         },  
