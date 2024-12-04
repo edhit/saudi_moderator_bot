@@ -157,11 +157,12 @@ bot.on('message', async (ctx) => {
     if (trainingCount >= trainingGoal) {
       const input = { text: message.text || '' };
       const result = net.run(input);
+      const username = `@${ctx.message.from.username}, объявление ` || 'Объявление' 
 
       if (result.appropriate < 0.5 || isLinkPresent(message.text)) {
         // Удалить неподходящее сообщение
         await ctx.deleteMessage(message.message_id);
-        await ctx.telegram.sendMessage(message.from.id, 'Ваше сообщение было удалено как неподходящее.');
+        await ctx.telegram.sendMessage(message.from.id, `${username}было удалено, так как не относиться к теме группы.`);
         winston.warn(`Inappropriate message deleted: ${message.message_id}`);
         return;
       }
