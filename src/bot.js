@@ -84,9 +84,9 @@ const reviewMessage = async (ctx, message) => {
 bot.command('ujzbqecfubpjkqu', (ctx) => ctx.reply('🫡'))
 
 bot.command('rasxtdhndjvwtzp', async (ctx) => {
-  if (ctx.from.id !== process.env.ADMIN_ID) {
-    return ctx.reply('У вас нет прав для выполнения этой команды.');
-  }
+  // if (ctx.from.id !== process.env.ADMIN_ID) {
+    //return ctx.reply('У вас нет прав для выполнения этой команды.');
+  // }
 
   try {
     ctx.reply('Запускаю обновление...');
