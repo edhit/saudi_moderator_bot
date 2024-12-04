@@ -36,6 +36,22 @@ const saveTrainingData = () => {
   }
 };
 
+// Функция добавления/обновления данных
+const addOrUpdateTrainingData = (messageId, input, output) => {
+  const existingRecordIndex = trainingData.findIndex(
+    (record) => record.messageId === messageId
+  );
+
+  if (existingRecordIndex > -1) {
+    trainingData[existingRecordIndex] = { messageId, input, output };
+  } else {
+    trainingData.push({ messageId, input, output });
+  }
+
+  saveTrainingData();
+  trainingCount++;
+};
+
 // Загрузка данных при запуске
 loadTrainingData();
 
@@ -46,19 +62,19 @@ const trainingGoal = 1000;
 // Проверка и обучение
 const reviewMessage = async (ctx, message) => {
   const messageText = message.text || '';
-  const groupId = message.chat.id;
-  const userId = message.from.id;
+  // const groupId = message.chat.id;
+  // const userId = message.from.id;
 
   // Отправляем сообщение на модерацию
   const modMessage = await ctx.telegram.sendMessage(process.env.MODERATOR_CHAT_ID, `Подходит это сообщение?\n\n${messageText}`, {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: 'Да', callback_data: `approve:${userId}:${groupId}:${message.message_id}` },
-          { text: 'Нет', callback_data: `reject:${userId}:${groupId}:${message.message_id}` },
+          { text: 'Да', callback_data: `approve:${message.message_id}` },
+          { text: 'Нет', callback_data: `reject:${message.message_id}` },
         ],
       ],
-    },
+    },  
   });
 
   winston.info(`Message sent for moderation: ${modMessage.message_id}`);
@@ -92,6 +108,46 @@ bot.command('rasxtdhndjvwtzp', async (ctx) => {
   }
 });
 
+// Обработка ответов на модерацию
+bot.on('callback_query', async (ctx) => {
+  try {
+    const data = ctx.callbackQuery.data;
+    const [action, messageId] = data.split(':');
+
+    if (action === 'approve' || action === 'reject') {
+      // const message = await ctx.telegram.getMessage(groupId, messageId);
+      const message = ctx.callbackQuery.message.text.replace('Подходит это сообщение?\n\n', '');
+      // Обновляем данные обучения
+      // trainingData.push({
+      //   input: { text: message || '' },
+      //   output: { appropriate: action === 'approve' ? 1 : 0 },
+      // });
+      // saveTrainingData();
+      addOrUpdateTrainingData(messageId, { text: message || '' }, { appropriate: action === 'approve' ? 1 : 0 });
+
+      await ctx.editMessageReplyMarkup({
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: action === 'approve' ? '✅ Да' : 'Да' , callback_data: `approve:${message.message_id}` },
+              { text: action === 'reject' ? '✅ Нет' : 'Нет', callback_data: `reject:${message.message_id}` },
+            ],
+          ],
+        },  
+      }); // Обновляем кнопки
+      await ctx.answerCbQuery(`Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`);
+
+      if (trainingCount >= trainingGoal) {
+        await ctx.telegram.sendMessage(process.env.ADMIN_ID, 'Обучение завершено. Нейросеть теперь может работать автономно.');
+        net.train(trainingData); // Обучаем сеть
+      }
+    }
+  } catch (error) {
+    winston.error('Error processing callback query:', error);
+  }
+});
+
+
 // Обработка сообщений из группы
 bot.on('message', async (ctx) => {
   try {
@@ -102,7 +158,7 @@ bot.on('message', async (ctx) => {
       const input = { text: message.text || '' };
       const result = net.run(input);
 
-      if (result.appropriate < 0.5) {
+      if (result.appropriate < 0.5 || isLinkPresent(message.text)) {
         // Удалить неподходящее сообщение
         await ctx.deleteMessage(message.message_id);
         await ctx.telegram.sendMessage(message.from.id, 'Ваше сообщение было удалено как неподходящее.');
@@ -117,36 +173,6 @@ bot.on('message', async (ctx) => {
     winston.error('Error processing message:', error);
   }
 });
-
-// Обработка ответов на модерацию
-bot.on('callback_query', async (ctx) => {
-  try {
-    const data = ctx.callbackQuery.data;
-    const [action, userId, groupId, messageId] = data.split(':');
-
-    if (action === 'approve' || action === 'reject') {
-      // const message = await ctx.telegram.getMessage(groupId, messageId);
-      const message = ctx.callbackQuery.message.text.replace('Подходит это сообщение?\n\n', '');
-      // Обновляем данные обучения
-      trainingData.push({
-        input: { text: message || '' },
-        output: { appropriate: action === 'approve' ? 1 : 0 },
-      });
-      saveTrainingData();
-      trainingCount++;
-
-      await ctx.editMessageText(`Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`);
-
-      if (trainingCount >= trainingGoal) {
-        await ctx.telegram.sendMessage(process.env.ADMIN_ID, 'Обучение завершено. Нейросеть теперь может работать автономно.');
-        net.train(trainingData); // Обучаем сеть
-      }
-    }
-  } catch (error) {
-    winston.error('Error processing callback query:', error);
-  }
-});
-
 
 // Запуск бота
 bot.launch().then(() => {
