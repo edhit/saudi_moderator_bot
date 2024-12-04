@@ -125,7 +125,7 @@ bot.on('callback_query', async (ctx) => {
       // saveTrainingData();
       addOrUpdateTrainingData(messageId, { text: message || '' }, { appropriate: action === 'approve' ? 1 : 0 });
 
-      await ctx.editMessageReplyMarkup({
+      await ctx.editMessageText(ctx.callbackQuery.message.text, {
         reply_markup: {
           inline_keyboard: [
             [
