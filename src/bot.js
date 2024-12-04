@@ -152,24 +152,28 @@ bot.on('callback_query', async (ctx) => {
 // Обработка сообщений из группы
 bot.on('message', async (ctx) => {
   try {
-    const message = ctx.message;
+    const chatId = ctx.chat.id;
 
-    // Проверка, если бот уже обучен
-    if (trainingCount >= trainingGoal) {
-      const input = { text: message.text || '' };
-      const result = net.run(input);
-      const username = `@${ctx.message.from.username}, объявление ` || 'Объявление' 
-
-      if (result.appropriate < 0.5 || isLinkPresent(message.text)) {
-        // Удалить неподходящее сообщение
-        await ctx.deleteMessage(message.message_id);
-        await ctx.telegram.sendMessage(message.from.id, `${username}было удалено, так как не относиться к теме группы.`);
-        winston.warn(`Inappropriate message deleted: ${message.message_id}`);
-        return;
+    if (chatId === process.env.GROUP_ID || chatId === process.env.MODERATOR_CHAT_ID) {
+      const message = ctx.message;
+  
+      // Проверка, если бот уже обучен
+      if (trainingCount >= trainingGoal) {
+        const input = { text: message.text || '' };
+        const result = net.run(input);
+        const username = `@${ctx.message.from.username}, объявление ` || 'Объявление' 
+  
+        if (result.appropriate < 0.5 || isLinkPresent(message.text)) {
+          // Удалить неподходящее сообщение
+          await ctx.deleteMessage(message.message_id);
+          await ctx.telegram.sendMessage(message.from.id, `${username}было удалено, так как не относиться к теме группы.`);
+          winston.warn(`Inappropriate message deleted: ${message.message_id}`);
+          return;
+        }
+      } else {
+        // Отправляем сообщение на модерацию
+        await reviewMessage(ctx, message);
       }
-    } else {
-      // Отправляем сообщение на модерацию
-      await reviewMessage(ctx, message);
     }
   } catch (error) {
     winston.error('Error processing message:', error);
