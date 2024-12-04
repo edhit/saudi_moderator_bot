@@ -153,10 +153,10 @@ bot.on('callback_query', async (ctx) => {
 bot.on('message', async (ctx) => {
   try {
     const chatId = ctx.chat.id;
-console.log(chatId)
-console.log(process.env.GROUP_ID)
-console.log(process.env.MODERATOR_CHAT_ID)
-    if (chatId === process.env.GROUP_ID || chatId === process.env.MODERATOR_CHAT_ID) {
+//console.log(chatId)
+//console.log(process.env.GROUP_ID)
+//console.log(process.env.MODERATOR_CHAT_ID)
+    if (Number(chatId) === Number(process.env.GROUP_ID)) {
       const message = ctx.message;
   
       // Проверка, если бот уже обучен
