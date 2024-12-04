@@ -139,7 +139,7 @@ bot.on('callback_query', async (ctx) => {
       await ctx.answerCbQuery(`Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`);
 
       if (trainingCount >= trainingGoal) {
-        await ctx.telegram.sendMessage(process.env.ADMIN_ID, 'Обучение завершено. Нейросеть теперь может работать автономно.');
+        await ctx.telegram.sendMessage(process.env.MODERATOR_CHAT_ID, 'Обучение завершено. Нейросеть теперь может работать автономно.');
         net.train(trainingData); // Обучаем сеть
       }
     }
@@ -156,7 +156,7 @@ bot.on('message', async (ctx) => {
 //console.log(chatId)
 //console.log(process.env.GROUP_ID)
 //console.log(process.env.MODERATOR_CHAT_ID)
-    if (Number(chatId) === Number(process.env.GROUP_ID)) {
+    if ((Number(chatId) === Number(process.env.GROUP_ID)) || (Number(chatId) === Number(process.env.MODERATOR_CHAT_ID))) {
       const message = ctx.message;
   
       // Проверка, если бот уже обучен
