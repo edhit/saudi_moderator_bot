@@ -52,7 +52,7 @@ const loadDatabase = () => {
           admin: null,
           moderator: null,
           group: null,
-          moderate: "no",
+          moderate: "off",
         }),
       );
     }
@@ -159,7 +159,7 @@ bot.start(privateChatMiddleware, (ctx) => {
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.reply(
         formatMessage(
-          "Доступные команды:\n\n/moderate — Включить или отключить модерацию группы.\n/moderator — Назначение модератора.\n/group — Управление группой.\n/help - Инструкция бота\n/info - Показать настройки",
+          "/help — Показать команды",
         ),
         { parse_mode: "Markdown" },
       );
@@ -218,6 +218,28 @@ bot.command("clear", privateChatMiddleware, (ctx) => {
   }
 });
 
+// Команда для изменения админа (только для администратора)
+bot.command("admin", privateChatMiddleware, (ctx) => {
+  try {
+    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+    if (!isAdmin(ctx, db))
+      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+
+    const admin = parseInt(ctx.message.text.split(" ")[1]);
+    if (isNaN(admin))
+      return ctx.reply(
+        "❌ Укажите ID пользователя для назначения админа.",
+      );
+
+    db.admin = admin;
+    saveDatabase(db);
+    ctx.reply(`✅ Админ изменён на ID: ${admin}`);
+  } catch (error) {
+    winston.error("Error processing message:", error);
+  }
+});
+
 // Команда для изменения модератора (только для администратора)
 bot.command("moderator", privateChatMiddleware, (ctx) => {
   try {
@@ -271,13 +293,13 @@ bot.command("moderate", privateChatMiddleware, (ctx) => {
       );
 
     const state = ctx.message.text.split(" ")[1];
-    if (!["yes", "no"].includes(state))
-      return ctx.reply("❌ Укажите 'yes' или 'no'.");
+    if (!["on", "off"].includes(state))
+      return ctx.reply("❌ Укажите 'on' или 'off'.");
 
     db.moderate = state;
     saveDatabase(db);
     ctx.reply(
-      `✅ Состояние модерации изменено на: ${state === "yes" ? "Включено" : "Выключено"}`,
+      `✅ Состояние модерации изменено на: ${state === "on" ? "Включено" : "Выключено"}`,
     );
   } catch (error) {
     winston.error("Error processing message:", error);
@@ -297,19 +319,20 @@ bot.command("help", privateChatMiddleware, (ctx) => {
 ⚙️ *Доступные команды:*
 
 👑 *Администратор:*
+/admin [ID] - Назначить нового админа.
 /moderator [ID] - Назначить нового модератора.
 /group [ID] - Установить группу для управления.
-/moderate [yes|no] - Включить или отключить модерацию группы.
+/moderate [on|off] - Включить или отключить модерацию группы.
 /help - Показать список доступных команд.
 /info - Показать настройки
 
 🛡️ *Модератор:*
-/moderate [yes|no] - Включить или отключить модерацию группы.
+/moderate [on|off] - Включить или отключить модерацию группы.
 /help - Показать список доступных команд.
 
 📜 *Описание:*
 - ID пользователя или группы можно найти через Telegram (например, в настройках).
-- Команда /moderate [yes|no] включает или отключает модерацию сообщений в указанной группе.
+- Команда /moderate [on|off] включает или отключает модерацию сообщений в указанной группе.
 
 💡 Используйте команды с осторожностью, так как изменения вступают в силу сразу!
   `;
@@ -381,14 +404,20 @@ bot.on("message", async (ctx) => {
     if (!db) return;
     // ctx.telegram.sendMessage(db.admin, "Не удалось загрузить базу данных.");
     const chatId = ctx.chat.id;
+    const fromId = ctx.from.id;
+    const message = ctx.message;
 
-    if (Number(chatId) !== Number(process.env.GROUP_ID)) {
-      if (Number(chatId) !== Number(process.env.MODERATOR_CHAT_ID)) {
+    if (Number(chatId) !== Number(db.group)) {
+      if (Number(fromId) !== Number(db.moderator)) {
         return;
+      }
+    } else if (Number(chatId) === Number(db.group)) {
+      if (Number(fromId) === Number(db.moderator)) {
+        return ctx.telegram.sendMessage(db.admin, `${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`)
       }
     }
 
-    const message = ctx.message;
+    if (message.text === "") return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
     if (trainingCount >= trainingGoal) {
@@ -399,12 +428,12 @@ bot.on("message", async (ctx) => {
 
       if (
         (result.appropriate < 0.5 || isLinkPresent(message.text)) &&
-        db.moderate === "yes"
+        db.moderate === "on"
       ) {
         // Удалить неподходящее сообщение
         await ctx.deleteMessage(message.message_id);
-        await ctx.telegram.sendMessage(
-          message.from.id,
+        // await ctx.telegram.sendMessage(message.from.id,
+        await ctx.reply(
           `${username}было удалено, так как не относиться к теме группы.`,
         );
         winston.warn(`Inappropriate message deleted: ${message.message_id}`);
