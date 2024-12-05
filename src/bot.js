@@ -190,9 +190,29 @@ bot.command("info", privateChatMiddleware, (ctx) => {
   🛡️ *Модератор:* ${db.moderator || "Не указан"}
   👥 *Группа:* ${db.group || "Не указана"}
   ⚙️ *Модерация:* ${db.moderate || "Не указана"}
+  🧠 *Обучение:* ${trainingCount} из ${trainingGoal}
     `.trim();
 
     ctx.reply(infoMessage, { parse_mode: "Markdown" });
+  } catch (error) {
+    winston.error("Error processing message:", error);
+  }
+});
+
+// Команда для удаление данных обучения (только для администратора)
+bot.command("clear", privateChatMiddleware, (ctx) => {
+  try {
+    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+    if (!isAdmin(ctx, db))
+      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+      
+    trainingData = []
+    trainingCount = trainingData.length
+    
+    saveTrainingData();
+
+    ctx.reply(`✅ Данные для обучения нейросети удалены`);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
