@@ -314,7 +314,7 @@ bot.on("callback_query", privateChatMiddleware, async (ctx) => {
       const message = ctx.callbackQuery.message.text.replace(
         "Подходит это сообщение?\n\n",
         "",
-      );
+      ).replace(/\s+/g, ' ').trim();
 
       addOrUpdateTrainingData(
         messageId,
@@ -372,7 +372,7 @@ bot.on("message", async (ctx) => {
 
     // Проверка, если бот уже обучен
     if (trainingCount >= trainingGoal) {
-      const input = { text: message.text || "" };
+      const input = { text: message.text.replace(/\s+/g, ' ').trim() || "" };
       const result = net.run(input);
       const username =
         `@${ctx.message.from.username}, объявление ` || "Объявление";
