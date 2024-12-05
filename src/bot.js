@@ -174,7 +174,7 @@ bot.start(privateChatMiddleware, (ctx) => {
 });
 
 // Команда для изменения модератора (только для администратора)
-bot.command(privateChatMiddleware, "moderator", (ctx) => {
+bot.command("moderator", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -195,7 +195,7 @@ bot.command(privateChatMiddleware, "moderator", (ctx) => {
 });
 
 // Команда для изменения группы (только для администратора)
-bot.command(privateChatMiddleware, "group", (ctx) => {
+bot.command("group", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -214,7 +214,7 @@ bot.command(privateChatMiddleware, "group", (ctx) => {
 });
 
 // Команда для изменения состояния модерации (администратор и модератор)
-bot.command(privateChatMiddleware, "moderate", (ctx) => {
+bot.command("moderate", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -235,7 +235,7 @@ bot.command(privateChatMiddleware, "moderate", (ctx) => {
 });
 
 // Команда /help для администратора и модератора
-bot.command(privateChatMiddleware, "help", (ctx) => {
+bot.command("help", privateChatMiddleware, (ctx) => {
   if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
   if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return;
@@ -264,7 +264,7 @@ bot.command(privateChatMiddleware, "help", (ctx) => {
 });
 
 // Обработка ответов на модерацию
-bot.on(privateChatMiddleware, "callback_query", async (ctx) => {
+bot.on("callback_query", privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
