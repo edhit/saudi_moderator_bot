@@ -172,16 +172,14 @@ bot.start(privateChatMiddleware, (ctx) => {
 });
 
 // Команда /info для получения информации из базы
-bot.command("info", privateChatMiddleware, (ctx) => {
+bot.command("info", privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
     if (!isAdmin(ctx, db))
       return ctx.reply("🤖 Эта команда доступена только для администратора.");
 
-    if (!db) {
-      return ctx.reply("❌ Не удалось получить информацию из базы данных.");
-    }
+    // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
 
     // Формируем сообщение с информацией из базы
     const infoMessage = `
@@ -325,6 +323,7 @@ bot.command("help", privateChatMiddleware, (ctx) => {
 /moderate [on|off] - Включить или отключить модерацию группы.
 /help - Показать список доступных команд.
 /info - Показать настройки
+.clear - Удалить данные обучения
 
 🛡️ *Модератор:*
 /moderate [on|off] - Включить или отключить модерацию группы.
@@ -386,8 +385,7 @@ bot.on("callback_query", privateChatMiddleware, async (ctx) => {
       );
 
       if (trainingCount >= trainingGoal) {
-        await ctx.telegram.sendMessage(
-          db.moderator,
+        await ctx.reply(
           "Обучение завершено. Нейросеть теперь может работать автономно.",
         );
         net.train(trainingData); // Обучаем сеть
@@ -413,7 +411,7 @@ bot.on("message", async (ctx) => {
       }
     } else if (Number(chatId) === Number(db.group)) {
       if (Number(fromId) === Number(db.moderator)) {
-        return ctx.telegram.sendMessage(db.admin, `${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`)
+        return ctx.telegram.sendMessage(db.admin, `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`)
       }
     }
 
