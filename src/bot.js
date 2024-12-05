@@ -159,7 +159,7 @@ bot.start(privateChatMiddleware, (ctx) => {
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.reply(
         formatMessage(
-          "Доступные команды:\n\n/admin — Управление ботом.\n/moderator — Назначение модератора.\n/group — Управление группой.\n/help - Инструкция бота\n/info - Показать настройки",
+          "Доступные команды:\n\n/moderate — Включить или отключить модерацию группы.\n/moderator — Назначение модератора.\n/group — Управление группой.\n/help - Инструкция бота\n/info - Показать настройки",
         ),
         { parse_mode: "Markdown" },
       );
@@ -176,7 +176,8 @@ bot.command("info", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора.",);
+    if (!isAdmin(ctx, db))
+      return ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     if (!db) {
       return ctx.reply("❌ Не удалось получить информацию из базы данных.");
@@ -202,7 +203,8 @@ bot.command("moderator", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора.",);
+    if (!isAdmin(ctx, db))
+      return ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     const newModeratorId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newModeratorId))
@@ -223,7 +225,8 @@ bot.command("group", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора.",);
+    if (!isAdmin(ctx, db))
+      return ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     const newGroupId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newGroupId))
@@ -242,7 +245,10 @@ bot.command("moderate", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора и модератора.",);
+    if (!isAdmin(ctx, db) && !isModerator(ctx, db))
+      return ctx.reply(
+        "🤖 Эта команда доступена только для администратора и модератора.",
+      );
 
     const state = ctx.message.text.split(" ")[1];
     if (!["yes", "no"].includes(state))
@@ -262,7 +268,10 @@ bot.command("moderate", privateChatMiddleware, (ctx) => {
 bot.command("help", privateChatMiddleware, (ctx) => {
   if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-  if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора и модератора.",);
+  if (!isAdmin(ctx, db) && !isModerator(ctx, db))
+    return ctx.reply(
+      "🤖 Эта команда доступена только для администратора и модератора.",
+    );
 
   const helpMessage = `
 ⚙️ *Доступные команды:*
@@ -293,7 +302,10 @@ bot.on("callback_query", privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return ctx.reply("🤖 Эта команда доступена только для администратора и модератора.",);
+    if (!isAdmin(ctx, db) && !isModerator(ctx, db))
+      return ctx.reply(
+        "🤖 Эта команда доступена только для администратора и модератора.",
+      );
 
     const data = ctx.callbackQuery.data;
     const [action, messageId] = data.split(":");
