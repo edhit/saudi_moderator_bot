@@ -130,13 +130,7 @@ const reviewMessage = async (ctx, message) => {
 
 // Middleware для проверки типа чата
 const chatTypePrivate = async (ctx, next) => {
-  const chatType = ctx.chat?.type;
-
-  if (!chatType) return;
-
-  // if (chatType === 'group' || chatType === 'supergroup') {
-  //     return ctx.reply('🤖 Команда /start недоступна в группе. Используйте её в личном чате с ботом.');
-  // }
+  const chatType = ctx.chat.type;
 
   if (chatType === "private") {
     await next(); // Продолжаем выполнение команды
