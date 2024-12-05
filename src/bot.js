@@ -128,17 +128,21 @@ const reviewMessage = async (ctx, message) => {
   winston.info(`Message sent for moderation: ${modMessage.message_id}`);
 };
 
-// Middleware для проверки типа чата
-const chatTypePrivate = async (ctx, next) => {
-  const chatType = ctx.chat.type;
+// Middleware для проверки, что чат личный
+const privateChatMiddleware = async (ctx, next) => {
+  const chatType = ctx.chat?.type;
 
-  if (chatType === "private") {
-    await next(); // Продолжаем выполнение команды
-  } else return;
+  if (chatType === 'private') {
+      // Если чат личный, продолжаем обработку
+      await next();
+  } else {
+      // Если чат не личный, отправляем сообщение и завершаем обработку
+      // ctx.reply('❌ Эта команда доступна только в личных чатах с ботом.');
+  }
 };
 
 // Обработка команды /start
-bot.start(chatTypePrivate, (ctx) => {
+bot.start(privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -170,7 +174,7 @@ bot.start(chatTypePrivate, (ctx) => {
 });
 
 // Команда для изменения модератора (только для администратора)
-bot.command(chatTypePrivate, "moderator", (ctx) => {
+bot.command(privateChatMiddleware, "moderator", (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -191,7 +195,7 @@ bot.command(chatTypePrivate, "moderator", (ctx) => {
 });
 
 // Команда для изменения группы (только для администратора)
-bot.command(chatTypePrivate, "group", (ctx) => {
+bot.command(privateChatMiddleware, "group", (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -210,7 +214,7 @@ bot.command(chatTypePrivate, "group", (ctx) => {
 });
 
 // Команда для изменения состояния модерации (администратор и модератор)
-bot.command(chatTypePrivate, "moderate", (ctx) => {
+bot.command(privateChatMiddleware, "moderate", (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
@@ -231,7 +235,7 @@ bot.command(chatTypePrivate, "moderate", (ctx) => {
 });
 
 // Команда /help для администратора и модератора
-bot.command(chatTypePrivate, "help", (ctx) => {
+bot.command(privateChatMiddleware, "help", (ctx) => {
   if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
   if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return;
@@ -260,7 +264,7 @@ bot.command(chatTypePrivate, "help", (ctx) => {
 });
 
 // Обработка ответов на модерацию
-bot.on(chatTypePrivate, "callback_query", async (ctx) => {
+bot.on(privateChatMiddleware, "callback_query", async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
