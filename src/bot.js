@@ -317,7 +317,7 @@ bot.on("callback_query", privateChatMiddleware, async (ctx) => {
       ).replace(/\s+/g, ' ').trim();
 
       addOrUpdateTrainingData(
-        messageId,
+        messageId + '_' + ctx.from.id,
         { text: message || "" },
         { appropriate: action === "approve" ? 1 : 0 },
       );
