@@ -54,6 +54,7 @@ const loadDatabase = () => {
           moderator: null,
           group: null,
           moderate: "off",
+          train: false,
         }),
       );
     }
@@ -91,11 +92,11 @@ const addOrUpdateTrainingData = (messageId, input, output) => {
 // Функция для динамического расчета стоимости рекламы
 function calculateAdPrice(membersCount) {
   const minPrice = 10; // Минимальная цена
-  const maxPrice = 400; // Максимальная цена
-  const minMembers = 2000; // Минимальное количество участников
+  const maxPrice = 600; // Максимальная цена
+  const minMembers = 1000; // Минимальное количество участников
   const maxMembers = 200000; // Максимальное количество участников
 
-  if (membersCount <= minMembers) return minPrice; // Если подписчиков меньше 2000
+  if (membersCount <= minMembers) return minPrice; // Если подписчиков меньше 1000
   if (membersCount >= maxMembers) return maxPrice; // Если подписчиков больше 200000
 
   // Линейная интерполяция
@@ -231,15 +232,27 @@ bot.command("info", privateChatMiddleware, isAdminMiddleware, async (ctx) => {
   }
 });
 
-// Команда для удаление данных обучения (только для администратора)
+// Команда для сброса всех данных
 bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
     trainingData = [];
-    trainingCount = trainingData.length;
+
+    db = {
+      bot_id: null,
+      admin: null,
+      moderator: null,
+      group: null,
+      moderate: "off",
+      train: false,
+    }
 
     saveTrainingData();
+    saveDatabase(db);
 
-    ctx.reply(`✅ Данные для обучения нейросети удалены`);
+    loadTrainingData();
+    loadDatabase();
+
+    return ctx.reply(`✅ Все данные были сброшены. /start`);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -257,7 +270,7 @@ bot.command(
 
       if (membersCount <= 1000)
         return ctx.reply(
-          "💰 Стоимость рекламы расчитывается от 2000 участников группы",
+          "💰 Стоимость рекламы расчитывается от 1000 участников группы",
         );
 
       let moderator = "";
@@ -406,6 +419,10 @@ bot.on(
           { appropriate: action === "approve" ? 1 : 0 },
         );
 
+        if (db.train === true) {
+
+        } 
+
         await ctx.editMessageText(ctx.callbackQuery.message.text, {
           reply_markup: {
             inline_keyboard: [
@@ -422,11 +439,15 @@ bot.on(
             ],
           },
         }); // Обновляем кнопки
+
         await ctx.answerCbQuery(
           `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
         );
 
-        if (trainingCount >= trainingGoal) {
+        if ((trainingCount >= trainingGoal) && (db.train !== true)) {
+          db.train = true
+          saveDatabase(db);
+
           await ctx.reply(
             "Обучение завершено. Нейросеть теперь может работать автономно.",
           );
@@ -464,7 +485,7 @@ bot.on("message", async (ctx) => {
       return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
-    if (trainingCount >= trainingGoal) {
+    if ((trainingCount >= trainingGoal) && (db.train === true)) {
       const input = { text: message.text.replace(/\s+/g, " ").trim() || "" };
       const result = net.run(input);
       const username =
@@ -492,8 +513,10 @@ bot.on("message", async (ctx) => {
   }
 });
 
-// Запуск бота. Настройка вебхука или fallback на long polling
-bot.launch();
+// Запуск бота
+bot.launch().then(() => {
+  winston.error("Произошла ошибка:", err);
+});
 
 // Обработка ошибок
 bot.catch((err) => {
