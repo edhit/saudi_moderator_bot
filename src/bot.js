@@ -236,6 +236,7 @@ bot.command("info", privateChatMiddleware, isAdminMiddleware, async (ctx) => {
 bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
     trainingData = [];
+    trainingCount = trainingData.length;
 
     db = {
       bot_id: null,
