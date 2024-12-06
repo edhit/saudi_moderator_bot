@@ -472,7 +472,7 @@ bot.on("message", async (ctx) => {
     const fromId = ctx.from.id;
     const message = ctx.message;
 
-    if (message.text === "undefined" && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
+    // if (message.text === "undefined" && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
       return ctx.deleteMessage(message.message_id);
 
     if (Number(chatId) === Number(db.group)) {
