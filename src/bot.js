@@ -49,6 +49,7 @@ const loadDatabase = () => {
       fs.writeFileSync(
         database,
         JSON.stringify({
+          bot_id: null,
           admin: null,
           moderator: null,
           group: null,
@@ -159,11 +160,15 @@ const privateChatMiddleware = async (ctx, next) => {
 };
 
 // Обработка команды /start
-bot.start(privateChatMiddleware, (ctx) => {
+bot.start(privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
     if (!db.admin) {
+      const botInfo = await bot.telegram.getMe(); // Получаем информацию о боте
+      const botId = botInfo.id; // ID бота
+
+      db.bot_id = botId;
       db.admin = ctx.from.id;
       db.moderator = ctx.from.id;
       saveDatabase(db);
@@ -174,8 +179,10 @@ bot.start(privateChatMiddleware, (ctx) => {
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.replyWithMarkdown(
-        formatMessage(
-          "/help — Показать команды",
+        formatMessage(`
+          Статус: ${(isAdmin(ctx, db)) ? 'ADMIN' : 'MODERATOR'}
+          
+          /help — Показать команды`,
         ));
     }
 
@@ -190,8 +197,7 @@ bot.command("info", privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db))
-      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
 
@@ -212,12 +218,11 @@ bot.command("info", privateChatMiddleware, async (ctx) => {
 });
 
 // Команда для удаление данных обучения (только для администратора)
-bot.command("clear", privateChatMiddleware, (ctx) => {
+bot.command("aezakmi", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db))
-      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
       
     trainingData = []
     trainingCount = trainingData.length
@@ -233,13 +238,9 @@ bot.command("clear", privateChatMiddleware, (ctx) => {
 // Команда для показа цены рекламы
 bot.command('price', privateChatMiddleware, async (ctx) => {
     try {
-      if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
   
-      if (!isAdmin(ctx, db) && !isModerator(ctx, db))
-        return ctx.reply(
-          "🤖 Эта команда доступена только для администратора и модератора.",
-        );
-  
+    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
 
     // Получаем количество участников группы
     const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
@@ -271,8 +272,7 @@ bot.command("admin", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db))
-      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     const admin = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(admin))
@@ -293,8 +293,7 @@ bot.command("moderator", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db))
-      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     const newModeratorId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newModeratorId))
@@ -315,8 +314,7 @@ bot.command("group", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db))
-      return ctx.reply("🤖 Эта команда доступена только для администратора.");
+    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
 
     const newGroupId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newGroupId))
@@ -335,10 +333,7 @@ bot.command("moderate", privateChatMiddleware, (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db))
-      return ctx.reply(
-        "🤖 Эта команда доступена только для администратора и модератора.",
-      );
+    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
 
     const state = ctx.message.text.split(" ")[1];
     if (!["on", "off"].includes(state))
@@ -358,10 +353,7 @@ bot.command("moderate", privateChatMiddleware, (ctx) => {
 bot.command("help", privateChatMiddleware, (ctx) => {
   if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-  if (!isAdmin(ctx, db) && !isModerator(ctx, db))
-    return ctx.reply(
-      "🤖 Эта команда доступена только для администратора и модератора.",
-    );
+  if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
 
   const helpMessage = `
 ⚙️ *Доступные команды:*
@@ -374,7 +366,6 @@ bot.command("help", privateChatMiddleware, (ctx) => {
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
-.clear - Удалить данные обучения
 
 🛡️ *Модератор:*
 /moderate [on|off] - Включить или отключить модерацию группы.
@@ -396,10 +387,7 @@ bot.on("callback_query", privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db))
-      return ctx.reply(
-        "🤖 Эта команда доступена только для администратора и модератора.",
-      );
+    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return  //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
 
     const data = ctx.callbackQuery.data;
     const [action, messageId] = data.split(":");
@@ -457,17 +445,16 @@ bot.on("message", async (ctx) => {
     const fromId = ctx.from.id;
     const message = ctx.message;
 
-    if (Number(chatId) !== Number(db.group)) {
-      if (Number(fromId) !== Number(db.moderator)) {
-        return;
-      }
-    } else if (Number(chatId) === Number(db.group)) {
+    if (Number(chatId) === Number(db.group)) {
       if (Number(fromId) === Number(db.moderator)) {
         return ctx.telegram.sendMessage(db.admin, `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`)
       }
-    }
-
-    if ((message.text === undefined) && (db.moderate === "on")) return ctx.deleteMessage(message.message_id);
+      if (fromId === db.bot_id) {
+        return;
+      }
+    } else return;
+    
+    if ((typeof message.text === "string") && (db.moderate === "on")) return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
     if (trainingCount >= trainingGoal) {
