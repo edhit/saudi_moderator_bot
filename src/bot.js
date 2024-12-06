@@ -476,7 +476,7 @@ bot.on("message", async (ctx) => {
       if (Number(fromId) === Number(db.moderator)) {
         return ctx.telegram.sendMessage(
           db.admin,
-          `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
+          `⭐️ #MODERATOR\n\n${JSON.stringify(message)}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
         );
       }
       if (fromId === db.bot_id) {
