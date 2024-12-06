@@ -179,10 +179,8 @@ bot.start(privateChatMiddleware, async (ctx) => {
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.replyWithMarkdown(
-        formatMessage(`
-          Статус: ${(isAdmin(ctx, db)) ? 'ADMIN' : 'MODERATOR'}
-          
-          /help — Показать команды`,
+        formatMessage(`Статус: ${(isAdmin(ctx, db)) ? 'ADMIN' : 'MODERATOR'}
+/help — Показать команды`,
         ));
     }
 
