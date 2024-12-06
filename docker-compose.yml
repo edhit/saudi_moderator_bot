@@ -2,8 +2,11 @@ version: '3.8'
 services:
   bot:
     build: .
+    container_name: telegram_moderator_bot
     restart: always
     env_file: .env
+    ports:
+      - "3000:3000"
     volumes:
       - ./src:/app/src    # Монтируем локальную директорию src
       - ./logs:/app/logs  # Логи сохраняем локально
