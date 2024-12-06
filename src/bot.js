@@ -244,7 +244,7 @@ bot.command('price', privateChatMiddleware, async (ctx) => {
     // Получаем количество участников группы
     const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
 
-    // if (membersCount <= 2000) return ctx.reply('💰 Стоимость рекламы расчитывается от 2000 участников группы')
+    if (membersCount <= 2000) return ctx.reply('💰 Стоимость рекламы расчитывается от 2000 участников группы')
 
     let moderator = ''
     if (ctx.from.id === db.moderator) moderator = `📩 Для заказа рекламы свяжитесь с ${(ctx.from.username) ? '@' + ctx.from.username : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'}`
