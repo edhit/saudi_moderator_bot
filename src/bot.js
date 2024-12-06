@@ -415,7 +415,7 @@ bot.on("message", async (ctx) => {
       }
     }
 
-    if (message.text === "") return ctx.deleteMessage(message.message_id);
+    if ((message.text === undefined) && (db.moderate === "on")) return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
     if (trainingCount >= trainingGoal) {
