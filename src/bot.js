@@ -471,8 +471,10 @@ bot.on("message", async (ctx) => {
     const chatId = ctx.chat.id;
     const fromId = ctx.from.id;
     const message = ctx.message;
-    await ctx.reply(`df${message.text}`)
-    // if (message.text === "undefined" && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
+
+await ctx.reply(`${message.text} ${db.moderate} ${fromId} ${db.moderator}`)
+
+    if (message.text === "undefined" && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
       return ctx.deleteMessage(message.message_id);
 
     if (Number(chatId) === Number(db.group)) {
