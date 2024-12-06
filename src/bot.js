@@ -425,7 +425,8 @@ bot.on(
             `🧠 Обучаение было завершено`,
           );
         } 
-
+        
+        try {
         await ctx.editMessageText(ctx.callbackQuery.message.text, {
           reply_markup: {
             inline_keyboard: [
@@ -441,7 +442,8 @@ bot.on(
               ],
             ],
           },
-        }); // Обновляем кнопки
+        }); // Обновляем кнопк
+        } catch (error) {}
 
         await ctx.answerCbQuery(
           `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
