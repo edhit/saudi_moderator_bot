@@ -493,29 +493,7 @@ bot.on("message", async (ctx) => {
 });
 
 // Запуск бота. Настройка вебхука или fallback на long polling
-(async () => {
-  const webhookUrl = process.env.DOMAIN
-    ? `${process.env.DOMAIN}/bot${process.env.BOT_TOKEN}`
-    : null;
-
-  try {
-    if (webhookUrl) {
-      await bot.telegram.setWebhook(webhookUrl);
-      winston.log(`Webhook установлен: ${webhookUrl}`);
-    } else {
-      winston.warn("DOMAIN не указан в .env. Используется long polling.");
-    }
-    bot.startWebhook(
-      `/bot${process.env.BOT_TOKEN}`,
-      null,
-      process.env.PORT || 3000,
-    );
-  } catch (error) {
-    winston.error("Ошибка при настройке вебхука:", error);
-    winston.log("Переход на long polling...");
-    bot.launch();
-  }
-})();
+bot.launch();
 
 // Обработка ошибок
 bot.catch((err) => {
