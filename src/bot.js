@@ -87,6 +87,23 @@ const addOrUpdateTrainingData = (messageId, input, output) => {
   saveTrainingData();
 };
 
+// Функция для динамического расчета стоимости рекламы
+function calculateAdPrice(membersCount) {
+  const minPrice = 10; // Минимальная цена
+  const maxPrice = 850; // Максимальная цена
+  const minMembers = 2000; // Минимальное количество участников
+  const maxMembers = 200000; // Максимальное количество участников
+
+  if (membersCount <= minMembers) return minPrice; // Если подписчиков меньше 2000
+  if (membersCount >= maxMembers) return maxPrice; // Если подписчиков больше 200000
+
+  // Линейная интерполяция
+  return (
+    minPrice +
+    (maxPrice - minPrice) * ((membersCount - minMembers) / (maxMembers - minMembers))
+  ).toFixed(2);
+}
+
 // Загрузка данных при запуске
 loadTrainingData();
 loadDatabase();
@@ -150,19 +167,16 @@ bot.start(privateChatMiddleware, (ctx) => {
       db.admin = ctx.from.id;
       db.moderator = ctx.from.id;
       saveDatabase(db);
-      return ctx.reply(
-        formatMessage("Вы назначены администратором и модератором бота!"),
-        { parse_mode: "Markdown" },
+      return ctx.replyWithMarkdown(
+        formatMessage("Вы назначены администратором и модератором бота!")
       );
     }
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
-      return ctx.reply(
+      return ctx.replyWithMarkdown(
         formatMessage(
           "/help — Показать команды",
-        ),
-        { parse_mode: "Markdown" },
-      );
+        ));
     }
 
     return;
@@ -191,7 +205,7 @@ bot.command("info", privateChatMiddleware, async (ctx) => {
   🧠 *Обучение:* ${trainingCount} из ${trainingGoal}
     `.trim();
 
-    ctx.reply(infoMessage, { parse_mode: "Markdown" });
+    ctx.replyWithMarkdown(infoMessage);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -213,6 +227,38 @@ bot.command("clear", privateChatMiddleware, (ctx) => {
     ctx.reply(`✅ Данные для обучения нейросети удалены`);
   } catch (error) {
     winston.error("Error processing message:", error);
+  }
+});
+
+// Команда для показа цены рекламы
+bot.command('price', async (ctx) => {
+    try {
+      if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+  
+      if (!isAdmin(ctx, db) && !isModerator(ctx, db))
+        return ctx.reply(
+          "🤖 Эта команда доступена только для администратора и модератора.",
+        );
+  
+
+    // Получаем количество участников группы
+    const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
+
+    // Расчет стоимости рекламы
+    const price = calculateAdPrice(membersCount);
+
+    // Формирование сообщения
+    const message = `
+💰 **Цена рекламы в группе:**
+- Количество участников: ${membersCount}
+- Стоимость рекламы: *$${price}*
+
+📩 Для заказа рекламы свяжитесь с администратором.
+    `;
+    ctx.replyWithMarkdown(message);
+  } catch (error) {
+    logger.error('Failed to calculate ad price: ', error);
+    ctx.reply('❌ Произошла ошибка при расчете стоимости рекламы.');
   }
 });
 
@@ -336,7 +382,7 @@ bot.command("help", privateChatMiddleware, (ctx) => {
 💡 Используйте команды с осторожностью, так как изменения вступают в силу сразу!
   `;
 
-  ctx.reply(formatMessage(helpMessage), { parse_mode: "Markdown" });
+  ctx.replyWithMarkdown(formatMessage(helpMessage));
 });
 
 // Обработка ответов на модерацию
