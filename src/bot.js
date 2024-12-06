@@ -420,7 +420,9 @@ bot.on(
         );
 
         if (db.train === true) {
-
+          return ctx.answerCbQuery(
+            `🧠 Обучаение было завершено`,
+          );
         } 
 
         await ctx.editMessageText(ctx.callbackQuery.message.text, {
@@ -444,7 +446,7 @@ bot.on(
           `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
         );
 
-        if ((trainingCount >= trainingGoal) && (db.train !== true)) {
+        if ((trainingCount >= trainingGoal) && (db.train === false)) {
           db.train = true
           saveDatabase(db);
 
