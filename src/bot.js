@@ -90,7 +90,7 @@ const addOrUpdateTrainingData = (messageId, input, output) => {
 // Функция для динамического расчета стоимости рекламы
 function calculateAdPrice(membersCount) {
   const minPrice = 10; // Минимальная цена
-  const maxPrice = 850; // Максимальная цена
+  const maxPrice = 400; // Максимальная цена
   const minMembers = 2000; // Минимальное количество участников
   const maxMembers = 200000; // Максимальное количество участников
 
@@ -231,7 +231,7 @@ bot.command("clear", privateChatMiddleware, (ctx) => {
 });
 
 // Команда для показа цены рекламы
-bot.command('price', async (ctx) => {
+bot.command('price', privateChatMiddleware, async (ctx) => {
     try {
       if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
   
@@ -244,6 +244,10 @@ bot.command('price', async (ctx) => {
     // Получаем количество участников группы
     const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
 
+    // if (membersCount <= 2000) return ctx.reply('💰 Стоимость рекламы расчитывается от 2000 участников группы')
+
+    let moderator = ''
+    if (ctx.from.id === db.moderator) moderator = `📩 Для заказа рекламы свяжитесь с ${(ctx.from.username) ? '@' + ctx.from.username : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'}`
     // Расчет стоимости рекламы
     const price = calculateAdPrice(membersCount);
 
@@ -253,7 +257,7 @@ bot.command('price', async (ctx) => {
 - Количество участников: ${membersCount}
 - Стоимость рекламы: *$${price}*
 
-📩 Для заказа рекламы свяжитесь с администратором.
+${moderator}
     `;
     ctx.replyWithMarkdown(message);
   } catch (error) {
