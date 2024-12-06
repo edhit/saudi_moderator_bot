@@ -253,13 +253,13 @@ bot.command('price', privateChatMiddleware, async (ctx) => {
 
     // Формирование сообщения
     const message = `
-💰 **Цена рекламы в группе:**
+💰 Цена рекламы в группе:
 - Количество участников: ${membersCount}
-- Стоимость рекламы: *$${price}*
+- Стоимость рекламы: $${price}
 
 ${moderator}
     `;
-    ctx.replyWithMarkdown(message);
+    ctx.reply(message);
   } catch (error) {
     logger.error('Failed to calculate ad price: ', error);
     ctx.reply('❌ Произошла ошибка при расчете стоимости рекламы.');
