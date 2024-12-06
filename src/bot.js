@@ -164,7 +164,7 @@ bot.start(privateChatMiddleware, async (ctx) => {
   try {
     if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
-    if (!db.admin) {
+    // if (!db.admin) {
       const botInfo = await bot.telegram.getMe(); // Получаем информацию о боте
       const botId = botInfo.id; // ID бота
 
@@ -175,7 +175,7 @@ bot.start(privateChatMiddleware, async (ctx) => {
       return ctx.replyWithMarkdown(
         formatMessage("Вы назначены администратором и модератором бота!")
       );
-    }
+    // }
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.replyWithMarkdown(
