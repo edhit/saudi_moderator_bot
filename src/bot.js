@@ -25,7 +25,7 @@ const loadTrainingData = () => {
       const data = JSON.parse(fs.readFileSync(ai, "utf8"));
       trainingData = Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error("Ошибка загрузки trainingData.json:", error);
+      winston.error("Ошибка загрузки trainingData.json:", error);
       trainingData = [];
     }
   } else {
@@ -38,7 +38,7 @@ const saveTrainingData = () => {
   try {
     fs.writeFileSync(ai, JSON.stringify(trainingData, null, 2));
   } catch (error) {
-    console.error("Ошибка сохранения trainingData.json:", error);
+    winston.error("Ошибка сохранения trainingData.json:", error);
   }
 };
 
@@ -59,7 +59,7 @@ const loadDatabase = () => {
     }
     db = JSON.parse(fs.readFileSync(database, "utf-8"));
   } catch (err) {
-    console.error("Ошибка при чтении базы данных:", err);
+    winston.error("Ошибка при чтении базы данных:", err);
   }
 };
 
@@ -68,7 +68,7 @@ const saveDatabase = (data) => {
   try {
     fs.writeFileSync(database, JSON.stringify(data, null, 2));
   } catch (err) {
-    console.error("Ошибка при сохранении базы данных:", err);
+    winston.error("Ошибка при сохранении базы данных:", err);
   }
 };
 
@@ -101,7 +101,8 @@ function calculateAdPrice(membersCount) {
   // Линейная интерполяция
   return (
     minPrice +
-    (maxPrice - minPrice) * ((membersCount - minMembers) / (maxMembers - minMembers))
+    (maxPrice - minPrice) *
+      ((membersCount - minMembers) / (maxMembers - minMembers))
   ).toFixed(2);
 }
 
@@ -123,27 +124,31 @@ const sendError = (ctx, error) => ctx.reply(`❌ Ошибка: ${error}`);
 
 // Проверка и обучение
 const reviewMessage = async (ctx, message) => {
-  const messageText = message.text || "";
-  // const groupId = message.chat.id;
-  // const userId = message.from.id;
+  try {
+    const messageText = message.text || "";
+    // const groupId = message.chat.id;
+    // const userId = message.from.id;
 
-  // Отправляем сообщение на модерацию
-  const modMessage = await ctx.telegram.sendMessage(
-    db.moderator,
-    `Подходит это сообщение?\n\n${messageText}`,
-    {
-      reply_markup: {
-        inline_keyboard: [
-          [
-            { text: "Да", callback_data: `approve:${message.message_id}` },
-            { text: "Нет", callback_data: `reject:${message.message_id}` },
+    // Отправляем сообщение на модерацию
+    const modMessage = await ctx.telegram.sendMessage(
+      db.moderator,
+      `Подходит это сообщение?\n\n${messageText}`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: "Да", callback_data: `approve:${message.message_id}` },
+              { text: "Нет", callback_data: `reject:${message.message_id}` },
+            ],
           ],
-        ],
+        },
       },
-    },
-  );
+    );
 
-  winston.info(`Message sent for moderation: ${modMessage.message_id}`);
+    winston.info(`Message sent for moderation: ${modMessage.message_id}`);
+  } catch (error) {
+    winston.error("Error processing message:", error);
+  }
 };
 
 // Middleware для проверки, что чат личный
@@ -153,10 +158,23 @@ const privateChatMiddleware = async (ctx, next) => {
   if (chatType === "private") {
     // Если чат личный, продолжаем обработку
     await next();
-  } else {
-    // Если чат не личный, отправляем сообщение и завершаем обработку
-    // ctx.reply('❌ Эта команда доступна только в личных чатах с ботом.');
-  }
+  } else return;
+};
+
+const isAdminMiddleware = async (ctx, next) => {
+  if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+  if (!isAdmin(ctx, db)) return; //ctx.reply("🤖 Эта команда доступена только для администратора.");
+
+  await next();
+};
+
+const isAdminAndModeratorMiddleware = async (ctx, next) => {
+  if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+  if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return; //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
+
+  await next();
 };
 
 // Обработка команды /start
@@ -173,15 +191,15 @@ bot.start(privateChatMiddleware, async (ctx) => {
       db.moderator = ctx.from.id;
       saveDatabase(db);
       return ctx.replyWithMarkdown(
-        formatMessage("Вы назначены администратором и модератором бота!")
+        formatMessage("Вы назначены администратором и модератором бота!"),
       );
     }
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.replyWithMarkdown(
-        formatMessage(`Статус: ${(isAdmin(ctx, db)) ? 'ADMIN' : 'MODERATOR'}
-/help — Показать команды`,
-        ));
+        formatMessage(`Статус: ${isAdmin(ctx, db) ? "ADMIN" : "MODERATOR"}
+/help — Показать команды`),
+      );
     }
 
     return;
@@ -191,12 +209,8 @@ bot.start(privateChatMiddleware, async (ctx) => {
 });
 
 // Команда /info для получения информации из базы
-bot.command("info", privateChatMiddleware, async (ctx) => {
+bot.command("info", privateChatMiddleware, isAdminMiddleware, async (ctx) => {
   try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-
-    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
-
     // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
 
     // Формируем сообщение с информацией из базы
@@ -218,15 +232,11 @@ bot.command("info", privateChatMiddleware, async (ctx) => {
 });
 
 // Команда для удаление данных обучения (только для администратора)
-bot.command("aezakmi", privateChatMiddleware, (ctx) => {
+bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+    trainingData = [];
+    trainingCount = trainingData.length;
 
-    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
-      
-    trainingData = []
-    trainingCount = trainingData.length
-    
     saveTrainingData();
 
     ctx.reply(`✅ Данные для обучения нейросети удалены`);
@@ -236,49 +246,47 @@ bot.command("aezakmi", privateChatMiddleware, (ctx) => {
 });
 
 // Команда для показа цены рекламы
-bot.command('price', privateChatMiddleware, async (ctx) => {
+bot.command(
+  "price",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  async (ctx) => {
     try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-  
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
+      // Получаем количество участников группы
+      const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
 
-    // Получаем количество участников группы
-    const membersCount = await ctx.telegram.getChatMembersCount(ctx.chat.id);
+      if (membersCount <= 1000)
+        return ctx.reply(
+          "💰 Стоимость рекламы расчитывается от 2000 участников группы",
+        );
 
-    if (membersCount <= 2000) return ctx.reply('💰 Стоимость рекламы расчитывается от 2000 участников группы')
+      let moderator = "";
+      if (ctx.from.id === db.moderator)
+        moderator = `📩 Для заказа рекламы свяжитесь с ${ctx.from.username ? "@" + ctx.from.username : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'}`;
+      // Расчет стоимости рекламы
+      const price = calculateAdPrice(membersCount);
 
-    let moderator = ''
-    if (ctx.from.id === db.moderator) moderator = `📩 Для заказа рекламы свяжитесь с ${(ctx.from.username) ? '@' + ctx.from.username : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'}`
-    // Расчет стоимости рекламы
-    const price = calculateAdPrice(membersCount);
-
-    // Формирование сообщения
-    const message = `
+      // Формирование сообщения
+      const message = `
 💰 Цена рекламы в группе:
 - Количество участников: ${membersCount}
 - Стоимость рекламы: $${price}
 
 ${moderator}
     `;
-    ctx.reply(message);
-  } catch (error) {
-    logger.error('Failed to calculate ad price: ', error);
-    ctx.reply('❌ Произошла ошибка при расчете стоимости рекламы.');
-  }
-});
+      ctx.reply(message);
+    } catch (error) {
+      winston.error("Error processing message:", error);
+    }
+  },
+);
 
 // Команда для изменения админа (только для администратора)
-bot.command("admin", privateChatMiddleware, (ctx) => {
+bot.command("admin", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-
-    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
-
     const admin = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(admin))
-      return ctx.reply(
-        "❌ Укажите ID пользователя для назначения админа.",
-      );
+      return ctx.reply("❌ Укажите ID пользователя для назначения админа.");
 
     db.admin = admin;
     saveDatabase(db);
@@ -289,12 +297,8 @@ bot.command("admin", privateChatMiddleware, (ctx) => {
 });
 
 // Команда для изменения модератора (только для администратора)
-bot.command("moderator", privateChatMiddleware, (ctx) => {
+bot.command("moderator", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-
-    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
-
     const newModeratorId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newModeratorId))
       return ctx.reply(
@@ -310,12 +314,8 @@ bot.command("moderator", privateChatMiddleware, (ctx) => {
 });
 
 // Команда для изменения группы (только для администратора)
-bot.command("group", privateChatMiddleware, (ctx) => {
+bot.command("group", privateChatMiddleware, isAdminMiddleware, (ctx) => {
   try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-
-    if (!isAdmin(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора.");
-
     const newGroupId = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(newGroupId))
       return ctx.reply("❌ Укажите ID группы для управления.");
@@ -329,33 +329,34 @@ bot.command("group", privateChatMiddleware, (ctx) => {
 });
 
 // Команда для изменения состояния модерации (администратор и модератор)
-bot.command("moderate", privateChatMiddleware, (ctx) => {
-  try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+bot.command(
+  "moderate",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  (ctx) => {
+    try {
+      const state = ctx.message.text.split(" ")[1];
+      if (!["on", "off"].includes(state))
+        return ctx.reply("❌ Укажите 'on' или 'off'.");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
-
-    const state = ctx.message.text.split(" ")[1];
-    if (!["on", "off"].includes(state))
-      return ctx.reply("❌ Укажите 'on' или 'off'.");
-
-    db.moderate = state;
-    saveDatabase(db);
-    ctx.reply(
-      `✅ Состояние модерации изменено на: ${state === "on" ? "Включено" : "Выключено"}`,
-    );
-  } catch (error) {
-    winston.error("Error processing message:", error);
-  }
-});
+      db.moderate = state;
+      saveDatabase(db);
+      ctx.reply(
+        `✅ Состояние модерации изменено на: ${state === "on" ? "Включено" : "Выключено"}`,
+      );
+    } catch (error) {
+      winston.error("Error processing message:", error);
+    }
+  },
+);
 
 // Команда /help для администратора и модератора
-bot.command("help", privateChatMiddleware, (ctx) => {
-  if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
-
-  if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
-
-  const helpMessage = `
+bot.command(
+  "help",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  (ctx) => {
+    const helpMessage = `
 ⚙️ *Доступные команды:*
 
 👑 *Администратор:*
@@ -379,62 +380,64 @@ bot.command("help", privateChatMiddleware, (ctx) => {
 💡 Используйте команды с осторожностью, так как изменения вступают в силу сразу!
   `;
 
-  ctx.replyWithMarkdown(formatMessage(helpMessage));
-});
+    ctx.replyWithMarkdown(formatMessage(helpMessage));
+  },
+);
 
 // Обработка ответов на модерацию
-bot.on("callback_query", privateChatMiddleware, async (ctx) => {
-  try {
-    if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+bot.on(
+  "callback_query",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  async (ctx) => {
+    try {
+      const data = ctx.callbackQuery.data;
+      const [action, messageId] = data.split(":");
 
-    if (!isAdmin(ctx, db) && !isModerator(ctx, db)) return  //ctx.reply("🤖 Эта команда доступена только для администратора и модератора.");
+      if (action === "approve" || action === "reject") {
+        const message = ctx.callbackQuery.message.text
+          .replace("Подходит это сообщение?\n\n", "")
+          .replace(/\s+/g, " ")
+          .trim();
 
-    const data = ctx.callbackQuery.data;
-    const [action, messageId] = data.split(":");
-
-    if (action === "approve" || action === "reject") {
-      const message = ctx.callbackQuery.message.text.replace(
-        "Подходит это сообщение?\n\n",
-        "",
-      ).replace(/\s+/g, ' ').trim();
-
-      addOrUpdateTrainingData(
-        messageId + '_' + ctx.from.id,
-        { text: message || "" },
-        { appropriate: action === "approve" ? 1 : 0 },
-      );
-
-      await ctx.editMessageText(ctx.callbackQuery.message.text, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: action === "approve" ? "✅ Да" : "Да",
-                callback_data: `approve:${messageId}`,
-              },
-              {
-                text: action === "reject" ? "✅ Нет" : "Нет",
-                callback_data: `reject:${messageId}`,
-              },
-            ],
-          ],
-        },
-      }); // Обновляем кнопки
-      await ctx.answerCbQuery(
-        `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
-      );
-
-      if (trainingCount >= trainingGoal) {
-        await ctx.reply(
-          "Обучение завершено. Нейросеть теперь может работать автономно.",
+        addOrUpdateTrainingData(
+          messageId + "_" + ctx.from.id,
+          { text: message || "" },
+          { appropriate: action === "approve" ? 1 : 0 },
         );
-        net.train(trainingData); // Обучаем сеть
+
+        await ctx.editMessageText(ctx.callbackQuery.message.text, {
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: action === "approve" ? "✅ Да" : "Да",
+                  callback_data: `approve:${messageId}`,
+                },
+                {
+                  text: action === "reject" ? "✅ Нет" : "Нет",
+                  callback_data: `reject:${messageId}`,
+                },
+              ],
+            ],
+          },
+        }); // Обновляем кнопки
+        await ctx.answerCbQuery(
+          `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
+        );
+
+        if (trainingCount >= trainingGoal) {
+          await ctx.reply(
+            "Обучение завершено. Нейросеть теперь может работать автономно.",
+          );
+          net.train(trainingData); // Обучаем сеть
+        }
       }
+    } catch (error) {
+      winston.error("Error processing callback query:", error);
     }
-  } catch (error) {
-    winston.error("Error processing callback query:", error);
-  }
-});
+  },
+);
 
 // Обработка сообщений из группы
 bot.on("message", async (ctx) => {
@@ -447,18 +450,22 @@ bot.on("message", async (ctx) => {
 
     if (Number(chatId) === Number(db.group)) {
       if (Number(fromId) === Number(db.moderator)) {
-        return ctx.telegram.sendMessage(db.admin, `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`)
+        return ctx.telegram.sendMessage(
+          db.admin,
+          `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
+        );
       }
       if (fromId === db.bot_id) {
         return;
       }
     } else return;
-    
-    if ((typeof message.text === "string") && (db.moderate === "on")) return ctx.deleteMessage(message.message_id);
+
+    if (typeof message.text === "string" && db.moderate === "on")
+      return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
     if (trainingCount >= trainingGoal) {
-      const input = { text: message.text.replace(/\s+/g, ' ').trim() || "" };
+      const input = { text: message.text.replace(/\s+/g, " ").trim() || "" };
       const result = net.run(input);
       const username =
         `@${ctx.message.from.username}, объявление ` || "Объявление";
@@ -485,14 +492,38 @@ bot.on("message", async (ctx) => {
   }
 });
 
-// Запуск бота
-bot.launch().then(() => {
-  console.log("Бот запущен!");
-});
+// Запуск бота. Настройка вебхука или fallback на long polling
+(async () => {
+  const webhookUrl = process.env.DOMAIN
+    ? `${process.env.DOMAIN}/bot${process.env.BOT_TOKEN}`
+    : null;
+
+  try {
+    if (webhookUrl) {
+      await bot.telegram.setWebhook(webhookUrl);
+      winston.log(`Webhook установлен: ${webhookUrl}`);
+    } else {
+      winston.warn("DOMAIN не указан в .env. Используется long polling.");
+    }
+    bot.startWebhook(
+      `/bot${process.env.BOT_TOKEN}`,
+      null,
+      process.env.PORT || 3000,
+    );
+  } catch (error) {
+    winston.error("Ошибка при настройке вебхука:", error);
+    winston.log("Переход на long polling...");
+    bot.launch();
+  }
+})();
+
+// Завершение процесса при получении SIGINT или SIGTERM
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
 
 // Обработка ошибок
 bot.catch((err) => {
-  console.error("Произошла ошибка:", err);
+  winston.error("Произошла ошибка:", err);
 });
 
 // Завершение работы
