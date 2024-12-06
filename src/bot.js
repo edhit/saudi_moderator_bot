@@ -472,6 +472,9 @@ bot.on("message", async (ctx) => {
     const fromId = ctx.from.id;
     const message = ctx.message;
 
+    if (message.text === undefined && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
+      return ctx.deleteMessage(message.message_id);
+
     if (Number(chatId) === Number(db.group)) {
       if (Number(fromId) === Number(db.moderator)) {
         return ctx.telegram.sendMessage(
@@ -483,9 +486,6 @@ bot.on("message", async (ctx) => {
         return;
       }
     } else return;
-
-    if (message.text === undefined && db.moderate === "on")
-      return ctx.deleteMessage(message.message_id);
 
     // Проверка, если бот уже обучен
     if ((trainingCount >= trainingGoal) && (db.train === true)) {
