@@ -472,16 +472,16 @@ bot.on("message", async (ctx) => {
     const fromId = ctx.from.id;
     const message = ctx.message;
 
-await ctx.reply(`${message.text} ${db.moderate} ${fromId} ${db.moderator}`)
+//await ctx.reply(`${message.text} ${db.moderate} ${fromId} ${db.moderator}`)
 
-    if (message.text === "undefined" && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
+    if (!message.text && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
       return ctx.deleteMessage(message.message_id);
 
     if (Number(chatId) === Number(db.group)) {
       if (Number(fromId) === Number(db.moderator)) {
         return ctx.telegram.sendMessage(
           db.admin,
-          `⭐️ #MODERATOR\n\n${JSON.stringify(message)}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
+          `⭐️ #MODERATOR\n\n${message.text}\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
         );
       }
       if (fromId === db.bot_id) {
