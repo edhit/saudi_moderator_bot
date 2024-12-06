@@ -517,10 +517,6 @@ bot.on("message", async (ctx) => {
   }
 })();
 
-// Завершение процесса при получении SIGINT или SIGTERM
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
-
 // Обработка ошибок
 bot.catch((err) => {
   winston.error("Произошла ошибка:", err);
