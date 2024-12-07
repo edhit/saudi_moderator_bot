@@ -491,6 +491,11 @@ bot.on(
 async function moderateGroup(ctx) {
   try {
     if (!db) return;
+
+    const escapeMarkdown = (text) => {
+      return text.replace(/[_*[\]()~`>#+\-=|{}.!]/g, "\\$&");
+    };
+
     // ctx.telegram.sendMessage(db.admin, "Не удалось загрузить базу данных.");
     const chatId = ctx.chat.id;
     const fromId = ctx.from.id;
@@ -506,16 +511,14 @@ async function moderateGroup(ctx) {
     if (Number(fromId) === Number(db.moderator)) {
       return ctx.telegram.sendMessage(
         db.admin,
-        `⭐️ #message_moderator\n\n${
+        `⭐️ *#message_moderator*\n\n${
           message.text
-            ? message.text
+            ? escapeMarkdown(message.text)
             : message.caption
-              ? message.caption
-              : "Текста в сообщении нету. Посмотреть можно по ссылке ниже:"
-        }\n\n(Ссылка)[https://t.me/c/${String(chatId).slice(4)}/${message.message_id}]`,
-        {
-          parse_mode: 'Markdown'
-        }
+            ? escapeMarkdown(message.caption)
+            : "Текста в сообщении нет. Посмотреть можно по ссылке ниже:"
+        }\n\n[Посмотреть сообщение](https://t.me/c/${String(chatId).slice(4)}/${message.message_id})`,
+        { parse_mode: "MarkdownV2" }
       );
     }
     if (fromId === db.bot_id) {
