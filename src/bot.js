@@ -166,6 +166,8 @@ const privateChatMiddleware = async (ctx, next) => {
 const fromGroupChatMiddleware = async (ctx, next) => {
   if (!db) return;
 
+  const chatId = ctx.chat.id;
+
   if (Number(chatId) === Number(db.group)) {
     // Если чат личный, продолжаем обработку
     await next();
