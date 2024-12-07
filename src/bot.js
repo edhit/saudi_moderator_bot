@@ -153,11 +153,20 @@ const reviewMessage = async (ctx, message) => {
   }
 };
 
-// Middleware для проверки, что чат личный
+// Middlewares
 const privateChatMiddleware = async (ctx, next) => {
   const chatType = ctx.chat?.type;
 
   if (chatType === "private") {
+    // Если чат личный, продолжаем обработку
+    await next();
+  } else return;
+};
+
+const fromGroupChatMiddleware = async (ctx, next) => {
+  if (!db) return;
+
+  if (Number(chatId) === Number(db.group)) {
     // Если чат личный, продолжаем обработку
     await next();
   } else return;
@@ -229,7 +238,7 @@ bot.command("info", privateChatMiddleware, isAdminMiddleware, async (ctx) => {
   🧠 *Обучение:* ${trainingCount} из ${trainingGoal}
     `.trim();
 
-    ctx.replyWithMarkdown(infoMessage);
+    return ctx.replyWithMarkdown(infoMessage);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -249,7 +258,7 @@ bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
       group: null,
       moderate: "off",
       train: false,
-    }
+    };
 
     saveTrainingData();
     saveDatabase(db);
@@ -280,7 +289,11 @@ bot.command(
 
       let moderator = "";
       if (ctx.from.id === db.moderator)
-        moderator = `📩 Для заказа рекламы свяжитесь с ${ctx.from.username ? "@" + ctx.from.username : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'}`;
+        moderator = `📩 Для заказа рекламы свяжитесь с ${
+          ctx.from.username
+            ? "@" + ctx.from.username
+            : '"ИМЯ ПОЛЬЗОВАТЕЛЯ НЕ УКАЗАНО"'
+        }`;
       // Расчет стоимости рекламы
       const price = calculateAdPrice(membersCount);
 
@@ -292,7 +305,7 @@ bot.command(
 
 ${moderator}
     `;
-      ctx.reply(message);
+      return ctx.reply(message);
     } catch (error) {
       winston.error("Error processing message:", error);
     }
@@ -308,7 +321,7 @@ bot.command("admin", privateChatMiddleware, isAdminMiddleware, (ctx) => {
 
     db.admin = admin;
     saveDatabase(db);
-    ctx.reply(`✅ Админ изменён на ID: ${admin}`);
+    return ctx.reply(`✅ Админ изменён на ID: ${admin}`);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -325,7 +338,7 @@ bot.command("moderator", privateChatMiddleware, isAdminMiddleware, (ctx) => {
 
     db.moderator = newModeratorId;
     saveDatabase(db);
-    ctx.reply(`✅ Модератор изменён на ID: ${newModeratorId}`);
+    return ctx.reply(`✅ Модератор изменён на ID: ${newModeratorId}`);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -340,7 +353,7 @@ bot.command("group", privateChatMiddleware, isAdminMiddleware, (ctx) => {
 
     db.group = newGroupId;
     saveDatabase(db);
-    ctx.reply(`✅ Группа изменена на ID: ${newGroupId}`);
+    return ctx.reply(`✅ Группа изменена на ID: ${newGroupId}`);
   } catch (error) {
     winston.error("Error processing message:", error);
   }
@@ -354,13 +367,15 @@ bot.command(
   (ctx) => {
     try {
       const state = ctx.message.text.split(" ")[1];
-      if (!["on", "off"].includes(state))
-        return ctx.reply("❌ Укажите 'on' или 'off'.");
+      if (!["on", "off", "test"].includes(state))
+        return ctx.reply("❌ Укажите 'on' или 'off' или 'test'");
 
       db.moderate = state;
       saveDatabase(db);
-      ctx.reply(
-        `✅ Состояние модерации изменено на: ${state === "on" ? "Включено" : "Выключено"}`,
+      return ctx.reply(
+        `✅ Состояние модерации изменено на: ${
+          state === "on" ? "Включено" : "Выключено"
+        }`,
       );
     } catch (error) {
       winston.error("Error processing message:", error);
@@ -381,7 +396,8 @@ bot.command(
 /admin [ID] - Назначить нового админа.
 /moderator [ID] - Назначить нового модератора.
 /group [ID] - Установить группу для управления.
-/moderate [on|off] - Включить или отключить модерацию группы.
+/moderate [on|off|test] - Включить или отключить модерацию группы. 
+  test - посмотреть, как проверяет входящие сообщение из группы бот(после обучения)
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
@@ -425,36 +441,36 @@ bot.on(
         );
 
         if (db.train === true) {
-          return ctx.answerCbQuery(
-            `🧠 Обучаение было завершено`,
-          );
-        } 
-        
+          return ctx.answerCbQuery(`🧠 Обучаение было завершено`);
+        }
+
         try {
-        await ctx.editMessageText(ctx.callbackQuery.message.text, {
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: action === "approve" ? "✅ Да" : "Да",
-                  callback_data: `approve:${messageId}`,
-                },
-                {
-                  text: action === "reject" ? "✅ Нет" : "Нет",
-                  callback_data: `reject:${messageId}`,
-                },
+          await ctx.editMessageText(ctx.callbackQuery.message.text, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: action === "approve" ? "✅ Да" : "Да",
+                    callback_data: `approve:${messageId}`,
+                  },
+                  {
+                    text: action === "reject" ? "✅ Нет" : "Нет",
+                    callback_data: `reject:${messageId}`,
+                  },
+                ],
               ],
-            ],
-          },
-        }); // Обновляем кнопк
+            },
+          }); // Обновляем кнопк
         } catch (error) {}
 
         await ctx.answerCbQuery(
-          `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
+          `Осталось записей до завершения обучения: ${
+            trainingGoal - trainingCount
+          }`,
         );
 
         if (trainingCount >= trainingGoal) {
-          db.train = true
+          db.train = true;
           saveDatabase(db);
 
           await ctx.reply(
@@ -469,8 +485,7 @@ bot.on(
   },
 );
 
-// Обработка сообщений из группы
-bot.on("message", async (ctx) => {
+async function moderateGroup(ctx) {
   try {
     if (!db) return;
     // ctx.telegram.sendMessage(db.admin, "Не удалось загрузить базу данных.");
@@ -478,22 +493,28 @@ bot.on("message", async (ctx) => {
     const fromId = ctx.from.id;
     const message = ctx.message;
 
-//await ctx.reply(`${message.text} ${db.moderate} ${fromId} ${db.moderator}`)
-
-    if (!message.text && db.moderate === "on" && Number(fromId) !== Number(db.moderator))
+    if (
+      (!message.text || isLinkPresent(message.text)) &&
+      db.moderate === "on" &&
+      Number(fromId) !== Number(db.moderator)
+    )
       return ctx.deleteMessage(message.message_id);
 
-    if (Number(chatId) === Number(db.group)) {
-      if (Number(fromId) === Number(db.moderator)) {
-        return ctx.telegram.sendMessage(
-          db.admin,
-          `⭐️ #message_moderator\n\n${(message.text) ? message.text : 'Текста в сообщении нету. Посмотреть можно по ссылке ниже:' }\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
-        );
-      }
-      if (fromId === db.bot_id) {
-        return;
-      }
-    } else return;
+    if (Number(fromId) === Number(db.moderator)) {
+      return ctx.telegram.sendMessage(
+        db.admin,
+        `⭐️ #message_moderator\n\n${
+          message.text
+            ? message.text
+            : message.caption
+              ? message.caption
+              : "Текста в сообщении нету. Посмотреть можно по ссылке ниже:"
+        }\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
+      );
+    }
+    if (fromId === db.bot_id) {
+      return;
+    }
 
     // Проверка, если бот уже обучен
     if (db.train === true) {
@@ -501,6 +522,14 @@ bot.on("message", async (ctx) => {
       const result = net.run(input);
       const username =
         `@${ctx.message.from.username}, объявление ` || "Объявление";
+
+      if (db.moderate === "test") {
+        return ctx.reply(
+          `${message.text}
+           Схожесть текста: ${result.appropriate}
+           Наличие ссылок: ${(isLinkPresent(message.text)) ? "Да" : "Нет"}
+        `);
+      }
 
       if (
         (result.appropriate < 0.5 || isLinkPresent(message.text)) &&
@@ -522,7 +551,13 @@ bot.on("message", async (ctx) => {
   } catch (error) {
     winston.error("Error processing message:", error);
   }
-});
+}
+
+// Обработка входящих сообщений из группы
+bot.on("message", fromGroupChatMiddleware, moderateGroup);
+
+// Обработка измененных сообщений из группы
+bot.on("edited_message", fromGroupChatMiddleware, moderateGroup);
 
 // Запуск бота
 bot.launch().then(() => {
