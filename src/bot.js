@@ -562,7 +562,7 @@ bot.on("message", fromGroupChatMiddleware, moderateGroup);
 
 // Обработка измененных сообщений из группы
 bot.on("edited_message", fromGroupChatMiddleware, async (ctx) => {
-  await ctx.reply(JSON.stringify(ctx))
+  await ctx.reply(JSON.stringify(ctx.edited_message.text))
 });
 
 // Запуск бота
