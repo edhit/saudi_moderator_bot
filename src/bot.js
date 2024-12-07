@@ -50,6 +50,7 @@ const loadDatabase = () => {
         database,
         JSON.stringify({
           bot_id: null,
+          bot_name: null,
           admin: null,
           moderator: null,
           group: null,
@@ -186,8 +187,10 @@ bot.start(privateChatMiddleware, async (ctx) => {
     if (!db.admin) {
       const botInfo = await bot.telegram.getMe(); // Получаем информацию о боте
       const botId = botInfo.id; // ID бота
+      const botName = botInfo.username;
 
       db.bot_id = botId;
+      db.bot_name = botName;
       db.admin = ctx.from.id;
       db.moderator = ctx.from.id;
       saveDatabase(db);
@@ -240,6 +243,7 @@ bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
 
     db = {
       bot_id: null,
+      bot_name: null,
       admin: null,
       moderator: null,
       group: null,
@@ -449,7 +453,7 @@ bot.on(
           `Осталось записей до завершения обучения: ${trainingGoal - trainingCount}`,
         );
 
-        if ((trainingCount >= trainingGoal) && (db.train === false)) {
+        if (trainingCount >= trainingGoal) {
           db.train = true
           saveDatabase(db);
 
@@ -492,7 +496,7 @@ bot.on("message", async (ctx) => {
     } else return;
 
     // Проверка, если бот уже обучен
-    if ((trainingCount >= trainingGoal) && (db.train === true)) {
+    if (db.train === true) {
       const input = { text: message.text.replace(/\s+/g, " ").trim() || "" };
       const result = net.run(input);
       const username =
