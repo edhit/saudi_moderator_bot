@@ -224,7 +224,7 @@ bot.start(privateChatMiddleware, async (ctx) => {
 });
 
 // Команда /info для получения информации из базы
-bot.command("info", privateChatMiddleware, isAdminMiddleware, async (ctx) => {
+bot.command("info", privateChatMiddleware, isAdminAndModeratorMiddleware, async (ctx) => {
   try {
     // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
 
@@ -407,6 +407,7 @@ bot.command(
 /moderate [on|off] - Включить или отключить модерацию группы.
 /price - Цена за рекламу
 /help - Показать список доступных команд.
+/info - Показать настройки
 
 _/moderate test - посмотреть, как проверяет входящие сообщение из группы бот(после обучения)_
 
