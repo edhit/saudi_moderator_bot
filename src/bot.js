@@ -495,7 +495,7 @@ async function moderateGroup(ctx) {
     // ctx.telegram.sendMessage(db.admin, "Не удалось загрузить базу данных.");
     const chatId = ctx.chat.id;
     const fromId = ctx.from.id;
-    const message = ctx.message;
+    const message = (ctx.message) ? ctx.message : ctx.editedMessage;;
 
     if (
       (!message.text || isLinkPresent(message.text)) &&
@@ -561,9 +561,7 @@ async function moderateGroup(ctx) {
 bot.on("message", fromGroupChatMiddleware, moderateGroup);
 
 // Обработка измененных сообщений из группы
-bot.on("edited_message", fromGroupChatMiddleware, async (ctx) => {
-  await ctx.reply(JSON.stringify(ctx.edited_message.text))
-});
+bot.on("edited_message", fromGroupChatMiddleware, moderateGroup);
 
 // Запуск бота
 bot.launch().then(() => {
