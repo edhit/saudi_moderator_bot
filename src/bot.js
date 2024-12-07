@@ -513,7 +513,7 @@ async function moderateGroup(ctx) {
             : message.caption
             ? message.caption
             : "Текста в сообщении нет. Посмотреть можно по ссылке ниже:"
-        }\n\n[Посмотреть сообщение](https://t.me/c/${String(chatId).slice(4)}/${message.message_id})`
+        }\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`
       );
     }
     if (fromId === db.bot_id) {
