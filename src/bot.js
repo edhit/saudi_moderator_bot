@@ -51,6 +51,7 @@ const loadDatabase = () => {
         JSON.stringify({
           bot_id: null,
           bot_name: null,
+          owner: null,
           admin: null,
           moderator: null,
           group: null,
@@ -117,6 +118,7 @@ let trainingCount = trainingData.length;
 const trainingGoal = 1000;
 
 // Проверка прав доступа
+const isOwner = (ctx, db) => ctx.from.id === db.owner;
 const isAdmin = (ctx, db) => ctx.from.id === db.admin;
 const isModerator = (ctx, db) => ctx.from.id === db.moderator;
 
@@ -174,10 +176,26 @@ const fromGroupChatMiddleware = async (ctx, next) => {
   } else return;
 };
 
+const isOwnerMiddleware = async (ctx, next) => {
+  if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+  if (!isOwner(ctx, db)) return; //ctx.reply("🤖 Эта команда доступена только для администратора.");
+
+  await next();
+};
+
 const isAdminMiddleware = async (ctx, next) => {
   if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
 
   if (!isAdmin(ctx, db)) return; //ctx.reply("🤖 Эта команда доступена только для администратора.");
+
+  await next();
+};
+
+const isModeratorMiddleware = async (ctx, next) => {
+  if (!db) return sendError(ctx, "Не удалось загрузить базу данных.");
+
+  if (!isModerator(ctx, db)) return; //ctx.reply("🤖 Эта команда доступена только для администратора.");
 
   await next();
 };
@@ -202,18 +220,22 @@ bot.start(privateChatMiddleware, async (ctx) => {
 
       db.bot_id = botId;
       db.bot_name = botName;
+      db.owner = ctx.from.id;
       db.admin = ctx.from.id;
       db.moderator = ctx.from.id;
       saveDatabase(db);
       return ctx.replyWithMarkdown(
-        formatMessage("Вы назначены администратором и модератором бота!"),
+        formatMessage("Вы назначены владельцом, администратором и модератором бота!"),
       );
     }
 
     if (isAdmin(ctx, db) || isModerator(ctx, db)) {
       return ctx.replyWithMarkdown(
-        formatMessage(`Статус: ${isAdmin(ctx, db) ? "ADMIN" : "MODERATOR"}
-/help — Показать команды`),
+        formatMessage(`Статус: ${isAdmin(ctx, db) ? "Админ" : "Модератор"}
+/help — Показать команды
+
+${isOwner(ctx, db) ? "Вы владелец этого бота" : ""}
+`),
       );
     }
 
@@ -247,7 +269,7 @@ bot.command("info", privateChatMiddleware, isAdminAndModeratorMiddleware, async 
 });
 
 // Команда для сброса всех данных
-bot.command("aezakmi", privateChatMiddleware, isAdminMiddleware, (ctx) => {
+bot.command("aezakmi", privateChatMiddleware, isOwnerMiddleware, (ctx) => {
   try {
     trainingData = [];
     trainingCount = trainingData.length;
@@ -314,8 +336,8 @@ ${moderator}
   },
 );
 
-// Команда для изменения админа (только для администратора)
-bot.command("admin", privateChatMiddleware, isAdminMiddleware, (ctx) => {
+// Команда для изменения админа (только владельца)
+bot.command("admin", privateChatMiddleware, isOwnerMiddleware, (ctx) => {
   try {
     const admin = parseInt(ctx.message.text.split(" ")[1]);
     if (isNaN(admin))
@@ -388,7 +410,7 @@ bot.command(
   },
 );
 
-// Команда /help для администратора и модератора
+// Команда /help (для администратора и модератора)
 bot.command(
   "help",
   privateChatMiddleware,
@@ -425,11 +447,11 @@ _/moderate test - посмотреть, как бот проверяет вхо�
   },
 );
 
-// Обработка ответов на модерацию
+// Обработка ответов на модерацию(только для модератора)
 bot.on(
   "callback_query",
   privateChatMiddleware,
-  isAdminAndModeratorMiddleware,
+  isModeratorMiddleware,
   async (ctx) => {
     try {
       const data = ctx.callbackQuery.data;
