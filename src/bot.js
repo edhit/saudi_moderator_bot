@@ -167,8 +167,8 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
   
       let review = isModerator(ctx, db) ? 
       [
-        { text: "Да", callback_data: `approve:${message.message_id}` },
-        { text: "Нет", callback_data: `reject:${message.message_id}` },
+        { text: "Да", callback_data: `approve:${data.messageId.split("_")[1]}` },
+        { text: "Нет", callback_data: `reject:${data.messageId.split("_")[1]}` },
       ] : [];
     
     // Формируем клавиатуру
