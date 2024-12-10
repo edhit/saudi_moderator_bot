@@ -161,17 +161,16 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
     const data = trainingData[index];
     const total = trainingData.length;
   
-    const messageText = `Элемент ${index + 1} из ${total}\n\n` +
-      `Message ID: ${data.messageId}\n` +
-      `Text: ${data.input.text}\n` +
-      `Appropriate: ${data.output.appropriate ? 'Yes' : 'No'}`;
+    const messageText = `Сообщение ${index + 1} из ${total}\n\n` +
+      `${data.input.text}\n` +
+      `Подходит: ${data.output.appropriate ? 'Yes' : 'No'}`;
   
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
           [
             { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
-            { text: '➡️ Следующий', callback_data: `next:${index}` },
+            { text: 'Следующий ➡️', callback_data: `next:${index}` },
           ],
         ],
       },
