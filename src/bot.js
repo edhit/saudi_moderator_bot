@@ -410,6 +410,15 @@ bot.command(
   },
 );
 
+// Команда для просмотрп обыченных данных (администратор и модератор)
+bot.command("data", privateChatMiddleware, isAdminAndModeratorMiddleware, (ctx) => {
+  try {
+    
+  } catch (error) {
+    winston.error("Error processing message:", error);
+  }
+});
+
 // Команда /help (для администратора и модератора)
 bot.command(
   "help",
@@ -448,15 +457,13 @@ _/moderate test - посмотреть, как бот проверяет вхо�
 );
 
 // Обработка ответов на модерацию(только для модератора)
-bot.on(
-  "callback_query",
+bot.action(/^(approve|reject):(\d+)$/,
   privateChatMiddleware,
   isModeratorMiddleware,
   async (ctx) => {
     try {
-      const data = ctx.callbackQuery.data;
-      const [action, messageId] = data.split(":");
-
+      const [, action, messageId] = ctx.match; // Извлекаем действие и ID сообщения
+      
       if (action === "approve" || action === "reject") {
         const message = ctx.callbackQuery.message.text
           .replace("Подходит это сообщение?\n\n", "")
