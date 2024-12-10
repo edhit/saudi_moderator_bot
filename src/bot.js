@@ -160,10 +160,10 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
   const data = trainingData[index];
   const total = trainingData.length;
 
-  const messageText = `**Элемент ${index + 1} из ${total}**\n\n` +
-    `**Message ID:** ${data.messageId}\n` +
-    `**Text:** ${data.input.text}\n` +
-    `**Appropriate:** ${data.output.appropriate ? 'Yes' : 'No'}`;
+  const messageText = `*Элемент ${index + 1} из ${total}*\n\n` +
+    `*Message ID:* ${data.messageId}\n` +
+    `*Text:* ${data.input.text}\n` +
+    `*Appropriate:* ${data.output.appropriate ? 'Yes' : 'No'}`;
 
   const keyboard = {
     reply_markup: {
