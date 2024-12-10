@@ -160,30 +160,38 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
   try {
     const data = trainingData[index];
     const total = trainingData.length;
-  
-    const messageText = `Сообщение ${index + 1} из ${total}\n\n` +
+
+    const messageText =
+      `Сообщение ${index + 1} из ${total}\n\n` +
       `${data.input.text}\n` +
-      `Подходит: ${data.output.appropriate ? 'Yes' : 'No'}`;
-  
-      let review = isModerator(ctx, db) ? 
-      [
-        { text: "Да", callback_data: `approve:${data.messageId.split("_")[1]}` },
-        { text: "Нет", callback_data: `reject:${data.messageId.split("_")[1]}` },
-      ] : [];
-    
+      `Подходит: ${data.output.appropriate ? "Да" : "Нет"}`;
+
+    let review = isModerator(ctx, db)
+      ? [
+          {
+            text: data.output.appropriate === 1 ? "✅ Да" : "Да",
+            callback_data: `approve:${data.messageId.split("_")[1]}`,
+          },
+          {
+            text: data.output.appropriate === 0 ? "✅ Нет" : "Нет",
+            callback_data: `reject:${data.messageId.split("_")[1]}`,
+          },
+        ]
+      : [];
+
     // Формируем клавиатуру
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
           [
-            { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
-            { text: 'Следующий ➡️', callback_data: `next:${index}` },
+            { text: "⬅️ Предыдущий", callback_data: `prev:${index}` },
+            { text: "Следующий ➡️", callback_data: `next:${index}` },
           ],
-          ...(review.length > 0 ? [review] : []) // Добавляем review только если он не пустой
+          ...(review.length > 0 ? [review] : []), // Добавляем review только если он не пустой
         ],
       },
     };
-    
+
     if (isNewMessage) {
       await ctx.reply(messageText, keyboard); // Отправка нового сообщения
     } else {
