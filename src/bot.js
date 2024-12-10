@@ -156,22 +156,21 @@ const reviewMessage = async (ctx, message) => {
 };
 
 // Функция для отправки или редактирования сообщения с кнопками
-const sendDataWithButtons = async (ctx, index, isNewMessage = false) => {
+async function sendDataWithButtons(ctx, index, isNewMessage = false) {
   const data = trainingData[index];
   const total = trainingData.length;
 
-  const messageText =
-    `**Элемент ${index + 1} из ${total}**\n\n` +
+  const messageText = `**Элемент ${index + 1} из ${total}**\n\n` +
     `**Message ID:** ${data.messageId}\n` +
     `**Text:** ${data.input.text}\n` +
-    `**Appropriate:** ${data.output.appropriate ? "Yes" : "No"}`;
+    `**Appropriate:** ${data.output.appropriate ? 'Yes' : 'No'}`;
 
   const keyboard = {
     reply_markup: {
       inline_keyboard: [
         [
-          { text: "⬅️ Предыдущий", callback_data: `prev:${index}` },
-          { text: "➡️ Следующий", callback_data: `next:${index}` },
+          { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
+          { text: '➡️ Следующий', callback_data: `next:${index}` },
         ],
       ],
     },
@@ -180,12 +179,9 @@ const sendDataWithButtons = async (ctx, index, isNewMessage = false) => {
   if (isNewMessage) {
     await ctx.replyWithMarkdown(messageText, keyboard); // Отправка нового сообщения
   } else {
-    await ctx.editMessageText(messageText, {
-      parse_mode: "Markdown",
-      ...keyboard,
-    }); // Редактирование текущего сообщения
+    await ctx.editMessageText(messageText, { parse_mode: 'Markdown', ...keyboard }); // Редактирование текущего сообщения
   }
-};
+}
 
 // Middlewares
 const privateChatMiddleware = async (ctx, next) => {
@@ -486,14 +482,14 @@ bot.command(
 /moderator [ID] - Назначить нового модератора.
 /group [ID] - Установить группу для управления.
 /moderate [on|off] - Включить или отключить модерацию группы.
-/data - Просмотр обыченных данных
+/data - Просмотр обученных данных
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
 
 🛡️ *Модератор:*
 /moderate [on|off] - Включить или отключить модерацию группы.
-/data - Просмотр обыченных данных
+/data - Просмотр обученных данных
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
