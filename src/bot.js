@@ -165,6 +165,13 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
       `${data.input.text}\n` +
       `Подходит: ${data.output.appropriate ? 'Yes' : 'No'}`;
   
+    const review = (isModerator(ctx,db)) ?
+      [
+        { text: "Да", callback_data: `approve:${message.message_id}` },
+        { text: "Нет", callback_data: `reject:${message.message_id}` },
+      ] : []
+    
+
     const keyboard = {
       reply_markup: {
         inline_keyboard: [
@@ -172,6 +179,7 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
             { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
             { text: 'Следующий ➡️', callback_data: `next:${index}` },
           ],
+          review
         ],
       },
     };
