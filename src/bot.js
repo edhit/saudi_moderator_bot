@@ -155,6 +155,38 @@ const reviewMessage = async (ctx, message) => {
   }
 };
 
+// Функция для отправки или редактирования сообщения с кнопками
+const sendDataWithButtons = async (ctx, index, isNewMessage = false) => {
+  const data = trainingData[index];
+  const total = trainingData.length;
+
+  const messageText =
+    `**Элемент ${index + 1} из ${total}**\n\n` +
+    `**Message ID:** ${data.messageId}\n` +
+    `**Text:** ${data.input.text}\n` +
+    `**Appropriate:** ${data.output.appropriate ? "Yes" : "No"}`;
+
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: "⬅️ Предыдущий", callback_data: `prev:${index}` },
+          { text: "➡️ Следующий", callback_data: `next:${index}` },
+        ],
+      ],
+    },
+  };
+
+  if (isNewMessage) {
+    await ctx.replyWithMarkdown(messageText, keyboard); // Отправка нового сообщения
+  } else {
+    await ctx.editMessageText(messageText, {
+      parse_mode: "Markdown",
+      ...keyboard,
+    }); // Редактирование текущего сообщения
+  }
+};
+
 // Middlewares
 const privateChatMiddleware = async (ctx, next) => {
   const chatType = ctx.chat?.type;
@@ -225,7 +257,9 @@ bot.start(privateChatMiddleware, async (ctx) => {
       db.moderator = ctx.from.id;
       saveDatabase(db);
       return ctx.replyWithMarkdown(
-        formatMessage("Вы назначены владельцом, администратором и модератором бота!"),
+        formatMessage(
+          "Вы назначены владельцом, администратором и модератором бота!",
+        ),
       );
     }
 
@@ -246,27 +280,32 @@ ${isOwner(ctx, db) ? "Вы владелец этого бота" : ""}
 });
 
 // Команда /info для получения информации из базы
-bot.command("info", privateChatMiddleware, isAdminAndModeratorMiddleware, async (ctx) => {
-  try {
-    // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
+bot.command(
+  "info",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  async (ctx) => {
+    try {
+      // const memberCount = await ctx.telegram.getChatMembersCount(Number(db.group));
 
-    // Формируем сообщение с информацией из базы
-    const infoMessage = `
+      // Формируем сообщение с информацией из базы
+      const infoMessage = `
   📋 *Информация о настройках бота:*
   🤖 *Бот:* ${db.bot_id || "Не указан"}
   👤 *Администратор:* ${db.admin || "Не указан"}
   🛡️ *Модератор:* ${db.moderator || "Не указан"}
   👥 *Группа:* ${db.group || "Не указана"}
 
-  ⚙️ *Модерация:* ${db.moderate === "on" ? "Включено" : (db.moderate === "off") ? "Выключено" : "Тестирование" || "Не указана"}
+  ⚙️ *Модерация:* ${db.moderate === "on" ? "Включено" : db.moderate === "off" ? "Выключено" : "Тестирование" || "Не указана"}
   🧠 *Обучение:* ${trainingCount} из ${trainingGoal}
     `.trim();
 
-    return ctx.replyWithMarkdown(infoMessage);
-  } catch (error) {
-    winston.error("Error processing message:", error);
-  }
-});
+      return ctx.replyWithMarkdown(infoMessage);
+    } catch (error) {
+      winston.error("Error processing message:", error);
+    }
+  },
+);
 
 // Команда для сброса всех данных
 bot.command("aezakmi", privateChatMiddleware, isOwnerMiddleware, (ctx) => {
@@ -394,14 +433,20 @@ bot.command(
       if (!["on", "off", "test"].includes(state))
         return ctx.reply("❌ Укажите 'on' или 'off' или 'test'");
 
-      if (state === "on" && db.train === false) 
-        return ctx.reply("❌ Нельзя запустить модерацию группы, пока нейросеть не обучена.");
+      if (state === "on" && db.train === false)
+        return ctx.reply(
+          "❌ Нельзя запустить модерацию группы, пока нейросеть не обучена.",
+        );
 
       db.moderate = state;
       saveDatabase(db);
       return ctx.reply(
         `✅ Состояние модерации изменено на: ${
-          state === "on" ? "Включено" : (state === "off") ? "Выключено" : "Тестирование"
+          state === "on"
+            ? "Включено"
+            : state === "off"
+              ? "Выключено"
+              : "Тестирование"
         }`,
       );
     } catch (error) {
@@ -411,13 +456,21 @@ bot.command(
 );
 
 // Команда для просмотрп обыченных данных (администратор и модератор)
-bot.command("data", privateChatMiddleware, isAdminAndModeratorMiddleware, (ctx) => {
-  try {
-    
-  } catch (error) {
-    winston.error("Error processing message:", error);
-  }
-});
+bot.command(
+  "data",
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  async (ctx) => {
+    try {
+      if (trainingData.length === 0) {
+        return ctx.reply("Нет данных для отображения.");
+      }
+      await sendDataWithButtons(ctx, 0, true); // true для отправки нового сообщения
+    } catch (error) {
+      winston.error("Error processing message:", error);
+    }
+  },
+);
 
 // Команда /help (для администратора и модератора)
 bot.command(
@@ -432,13 +485,15 @@ bot.command(
 /admin [ID] - Назначить нового админа.
 /moderator [ID] - Назначить нового модератора.
 /group [ID] - Установить группу для управления.
-/moderate [on|off] - Включить или отключить модерацию группы. 
+/moderate [on|off] - Включить или отключить модерацию группы.
+/data - Просмотр обыченных данных
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
 
 🛡️ *Модератор:*
 /moderate [on|off] - Включить или отключить модерацию группы.
+/data - Просмотр обыченных данных
 /price - Цена за рекламу
 /help - Показать список доступных команд.
 /info - Показать настройки
@@ -456,14 +511,42 @@ _/moderate test - посмотреть, как бот проверяет вхо�
   },
 );
 
+// Обработка кнопок навигации (администратор и модератор)
+bot.action(
+  /^(prev|next):(\d+)$/,
+  privateChatMiddleware,
+  isAdminAndModeratorMiddleware,
+  async (ctx) => {
+    try {
+      const [, action, index] = ctx.match;
+      const currentIndex = parseInt(index, 10);
+
+      let newIndex;
+      if (action === "prev") {
+        newIndex =
+          currentIndex > 0 ? currentIndex - 1 : trainingData.length - 1; // Кольцевой переход
+      } else if (action === "next") {
+        newIndex =
+          currentIndex < trainingData.length - 1 ? currentIndex + 1 : 0; // Кольцевой переход
+      }
+
+      // Обновляем текст сообщения
+      await sendDataWithButtons(ctx, newIndex);
+    } catch (error) {
+      winston.error("Error processing callback query:", error);
+    }
+  },
+);
+
 // Обработка ответов на модерацию(только для модератора)
-bot.action(/^(approve|reject):(\d+)$/,
+bot.action(
+  /^(approve|reject):(\d+)$/,
   privateChatMiddleware,
   isModeratorMiddleware,
   async (ctx) => {
     try {
       const [, action, messageId] = ctx.match; // Извлекаем действие и ID сообщения
-      
+
       if (action === "approve" || action === "reject") {
         const message = ctx.callbackQuery.message.text
           .replace("Подходит это сообщение?\n\n", "")
@@ -477,7 +560,9 @@ bot.action(/^(approve|reject):(\d+)$/,
         );
 
         if (db.train === true) {
-          return ctx.answerCbQuery(`🧠 Обучаение было завершено. Редактирование остановлено`);
+          return ctx.answerCbQuery(
+            `🧠 Обучаение было завершено. Редактирование остановлено`,
+          );
         }
 
         try {
@@ -528,7 +613,7 @@ async function moderateGroup(ctx) {
     // ctx.telegram.sendMessage(db.admin, "Не удалось загрузить базу данных.");
     const chatId = ctx.chat.id;
     const fromId = ctx.from.id;
-    const message = (ctx.message) ? ctx.message : ctx.editedMessage;;
+    const message = ctx.message ? ctx.message : ctx.editedMessage;
 
     if (
       (!message.text || isLinkPresent(message.text)) &&
@@ -544,12 +629,12 @@ async function moderateGroup(ctx) {
           message.text
             ? message.text
             : message.caption
-            ? message.caption
-            : "Текста в сообщении нет. Посмотреть можно по ссылке ниже:"
-        }\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`
+              ? message.caption
+              : "Текста в сообщении нет. Посмотреть можно по ссылке ниже:"
+        }\n\nhttps://t.me/c/${String(chatId).slice(4)}/${message.message_id}`,
       );
     }
-    
+
     if (fromId === db.bot_id) {
       return;
     }
@@ -565,8 +650,9 @@ async function moderateGroup(ctx) {
         return ctx.replyWithMarkdown(
           `${message.text}
            Схожесть текста: *${result.appropriate * 100} %*
-           Наличие ссылок: *${(isLinkPresent(message.text)) ? "Да" : "Нет"}*
-        `);
+           Наличие ссылок: *${isLinkPresent(message.text) ? "Да" : "Нет"}*
+        `,
+        );
       }
 
       if (
