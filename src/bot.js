@@ -157,29 +157,33 @@ const reviewMessage = async (ctx, message) => {
 
 // Функция для отправки или редактирования сообщения с кнопками
 async function sendDataWithButtons(ctx, index, isNewMessage = false) {
-  const data = trainingData[index];
-  const total = trainingData.length;
-
-  const messageText = `Элемент ${index + 1} из ${total}\n\n` +
-    `Message ID: ${data.messageId}\n` +
-    `Text: ${data.input.text}\n` +
-    `Appropriate: ${data.output.appropriate ? 'Yes' : 'No'}`;
-
-  const keyboard = {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
-          { text: '➡️ Следующий', callback_data: `next:${index}` },
+  try {
+    const data = trainingData[index];
+    const total = trainingData.length;
+  
+    const messageText = `Элемент ${index + 1} из ${total}\n\n` +
+      `Message ID: ${data.messageId}\n` +
+      `Text: ${data.input.text}\n` +
+      `Appropriate: ${data.output.appropriate ? 'Yes' : 'No'}`;
+  
+    const keyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '⬅️ Предыдущий', callback_data: `prev:${index}` },
+            { text: '➡️ Следующий', callback_data: `next:${index}` },
+          ],
         ],
-      ],
-    },
-  };
-
-  if (isNewMessage) {
-    await ctx.reply(messageText, keyboard); // Отправка нового сообщения
-  } else {
-    await ctx.editMessageText(messageText, { parse_mode: 'Markdown', ...keyboard }); // Редактирование текущего сообщения
+      },
+    };
+  
+    if (isNewMessage) {
+      await ctx.reply(messageText, keyboard); // Отправка нового сообщения
+    } else {
+      await ctx.editMessageText(messageText, keyboard); // Редактирование текущего сообщения
+    }
+  } catch (error) {
+    winston.error("Error processing message:", error);
   }
 }
 
