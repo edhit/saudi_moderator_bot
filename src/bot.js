@@ -166,18 +166,18 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
       `${data.input.text}\n` +
       `Подходит: ${data.output.appropriate ? "Да" : "Нет"}`;
 
-      const review = isModerator(ctx, db)
-      ? [
-          {
-            text: data.output.appropriate === 1 ? "✅ Да" : "Да",
-            callback_data: `approve:${data.messageId.split("_")[1]}_data`,
-          },
-          {
-            text: data.output.appropriate === 0 ? "✅ Нет" : "Нет",
-            callback_data: `reject:${data.messageId.split("_")[1]}_data`,
-          },
-        ]
-      : [];
+    // let review = isModerator(ctx, db)
+    //   ? [
+    //       {
+    //         text: data.output.appropriate === 1 ? "✅ Да" : "Да",
+    //         callback_data: `approve:${data.messageId.split("_")[1]}`,
+    //       },
+    //       {
+    //         text: data.output.appropriate === 0 ? "✅ Нет" : "Нет",
+    //         callback_data: `reject:${data.messageId.split("_")[1]}`,
+    //       },
+    //     ]
+    //   : [];
 
     // Формируем клавиатуру
     const keyboard = {
@@ -187,7 +187,7 @@ async function sendDataWithButtons(ctx, index, isNewMessage = false) {
             { text: "⬅️ Предыдущий", callback_data: `prev:${index}` },
             { text: "Следующий ➡️", callback_data: `next:${index}` },
           ],
-          ...(review.length > 0 ? [review] : []), // Добавляем review только если он не пустой
+          // ...(review.length > 0 ? [review] : []), // Добавляем review только если он не пустой
         ],
       },
     };
@@ -563,16 +563,13 @@ bot.action(
       const [, action, messageId] = ctx.match; // Извлекаем действие и ID сообщения
 
       if (action === "approve" || action === "reject") {
-        const flag = messageId.split("_")[1];
-        const id = flag === "data" ? messageId.split("_")[0] : messageId;
-
         const message = ctx.callbackQuery.message.text
           .replace("Подходит это сообщение?\n\n", "")
           .replace(/\s+/g, " ")
           .trim();
 
         addOrUpdateTrainingData(
-          id + "_" + ctx.from.id,
+          messageId + "_" + ctx.from.id,
           { text: message || "" },
           { appropriate: action === "approve" ? 1 : 0 },
         );
@@ -584,34 +581,22 @@ bot.action(
         }
 
         try {
-          const data =
-            flag === "data"
-              ? [
-                  { text: "⬅️ Предыдущий", callback_data: `prev:${index}` },
-                  { text: "Следующий ➡️", callback_data: `next:${index}` },
-                ]
-              : [];
-
-          // Формируем клавиатуру
-          const keyboard = {
+          await ctx.editMessageText(ctx.callbackQuery.message.text, {
             reply_markup: {
               inline_keyboard: [
-                ...(data.length > 0 ? [data] : []), // Добавляем data только если flag есть
                 [
                   {
-                    text: data.output.appropriate === 1 ? "✅ Да" : "Да",
-                    callback_data: `approve:${id}${flag === "data" ? "_data" : ""}`,
+                    text: action === "approve" ? "✅ Да" : "Да",
+                    callback_data: `approve:${messageId}`,
                   },
                   {
-                    text: data.output.appropriate === 0 ? "✅ Нет" : "Нет",
-                    callback_data: `reject:${id}${flag === "data" ? "_data" : ""}`,
+                    text: action === "reject" ? "✅ Нет" : "Нет",
+                    callback_data: `reject:${messageId}`,
                   },
                 ],
               ],
             },
-          };
-
-          await ctx.editMessageText(ctx.callbackQuery.message.text, keyboard); // Обновляем кнопк
+          }); // Обновляем кнопк
         } catch (error) {}
 
         await ctx.answerCbQuery(
